@@ -1,10 +1,12 @@
 # Change request workflow
 
-1. Create a GitHub issue describing problem, scope, acceptance criteria and affected applications.
-2. Branch from the current milestone integration branch; do not work directly on the default branch.
-3. Plan: inspect source, contracts, dependency impact, risks and tests.
-4. Implement only the agreed slice, with tests and migrations as needed.
-5. Review correctness, security, backward compatibility, module boundaries and docs drift.
-6. Open a PR referencing the issue; merge only after required checks and human review.
+One issue normally represents one change request (CR). Small, low-risk bootstrap setup may proceed directly on the integration branch when explicitly authorized.
 
-For cross-service work, explicitly name producers, consumers, contracts and ownership.
+1. **Scope:** Record problem, intended outcome, acceptance criteria, affected applications and out-of-scope work. Identify the milestone integration branch.
+2. **Branch:** For ordinary CRs, create a task branch from the milestone integration branch and target that branch with the PR. Never create or switch branches without authorization.
+3. **Plan (`$cr-plan`):** Inspect existing behavior, ownership, interfaces, dependencies, migration and compatibility risks. Resolve decisions that materially affect behavior before implementation. Planning is read-only.
+4. **Implement (`$cr-implement`):** Deliver the smallest coherent approved slice; add proportional tests, required migrations and contract updates. Use the affected application's tooling and check the final diff.
+5. **Review (`$cr-review`):** Review the complete change against its intended base and acceptance criteria. Prioritize correctness, security, data integrity, compatibility, boundaries, tests and documentation drift. Review is read-only.
+6. **PR:** Reference the issue when present, report verification and risks, and merge after required checks and human review. Only create commits or PRs when requested.
+
+For cross-service work, name the producer, consumer, contract, data owner and rollout/compatibility considerations. Keep ephemeral plans in the issue or PR; write durable documentation only when useful beyond the CR.
