@@ -19,3 +19,9 @@ Explain material deviations from the approved plan before proceeding if they alt
 ## Output
 
 Summarize implemented behavior, affected applications/contracts, decisions, exact verification commands and results, skipped checks and remaining risks. Do not commit, push or open a PR unless explicitly requested.
+
+## Optional code intelligence
+
+Follow `docs/06-development/code-intelligence.md`. If GitNexus is available and its index is current, use its graph/impact tools to narrow investigation; verify conclusions against actual source and account for dynamic Spring wiring, HTTP/event boundaries and generated code. If Serena is available, use symbol lookup/references to validate relationships. Neither tool is required: fall back to repository search and direct file inspection, and disclose missing or stale tooling. Do not run setup, indexing, hooks or install dependencies automatically.
+
+For a well-scoped symbol edit, Serena may help locate and modify the intended symbol; inspect the resulting diff and run relevant tests. Prefer straightforward edits when safer. Do not let MCP tooling expand the approved scope.

@@ -16,3 +16,7 @@ Read root `AGENTS.md`, `docs/06-development/workflow.md`, `docs/06-development/c
 ## Output
 
 Provide the decision and recommendation first, then alternatives, trade-offs, affected services/contracts, risks and unresolved questions. Do not edit files, branches or PRs unless separately authorized.
+
+## Optional code intelligence
+
+Follow `docs/06-development/code-intelligence.md`. If GitNexus is available and its index is current, use its graph/impact tools to narrow investigation; verify conclusions against actual source and account for dynamic Spring wiring, HTTP/event boundaries and generated code. If Serena is available, use symbol lookup/references to validate relationships. Neither tool is required: fall back to repository search and direct file inspection, and disclose missing or stale tooling. Do not run setup, indexing, hooks or install dependencies automatically.

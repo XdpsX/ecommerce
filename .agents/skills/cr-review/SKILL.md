@@ -16,3 +16,9 @@ Read root `AGENTS.md`, `docs/06-development/workflow.md`, `docs/06-development/c
 ## Output
 
 Report findings first in severity order, each with file/line, impact, evidence and actionable correction. Then open questions, verification performed and residual risks. Explicitly say when no findings were identified. Remain read-only; never modify files or commit as part of review.
+
+## Optional code intelligence
+
+Follow `docs/06-development/code-intelligence.md`. If GitNexus is available and its index is current, use its graph/impact tools to narrow investigation; verify conclusions against actual source and account for dynamic Spring wiring, HTTP/event boundaries and generated code. If Serena is available, use symbol lookup/references to validate relationships. Neither tool is required: fall back to repository search and direct file inspection, and disclose missing or stale tooling. Do not run setup, indexing, hooks or install dependencies automatically.
+
+Use GitNexus impact results as leads, not proof; inspect affected callers/consumers and the complete diff. Review must not mutate source or run automatic indexing/setup.
