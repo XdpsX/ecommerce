@@ -30,3 +30,5 @@ Thumbs.db
 .cache/
 # Local build logs
 .logs/
+# Serena
+.serena/
