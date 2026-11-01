@@ -58,8 +58,6 @@ export default defineConfig([
       ],
       '@stylistic/padding-line-between-statements': [
         'error',
-        { blankLine: 'always', prev: 'import', next: '*', },
-        { blankLine: 'any', prev: 'import', next: 'import', },
         { blankLine: 'always', prev: '*', next: 'return' },
       ]
     },
