@@ -10,3 +10,7 @@ One issue normally represents one change request (CR). Small, low-risk bootstrap
 6. **PR:** Reference the issue when present, report verification and risks, and merge after required checks and human review. Only create commits or PRs when requested.
 
 For cross-service work, name the producer, consumer, contract, data owner and rollout/compatibility considerations. Keep ephemeral plans in the issue or PR; write durable documentation only when useful beyond the CR.
+
+## Agent artifacts
+
+See `agent-artifacts.md`. Nontrivial CR plans: `.agent-work/plans/<cr-id>.md`; full reviews: `.agent-work/reviews/<cr-id>.md`; implementation code-reading walkthroughs: `.agent-work/implementations/<cr-id>.md`; QA drafts: `.agent-work/test-cases/<feature>.md`. These are local and ignored. Only reviewed reusable manual test suites belong in `docs/qa/manual/` and are committed after approval.
