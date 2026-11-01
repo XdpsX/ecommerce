@@ -17,7 +17,7 @@ Store reusable, human-reviewed manual test suites here. Drafts belong in `.agent
 | CAT-001 | Create category with valid data | Admin is signed in | 1. Open Categories; 2. Select Create; 3. Enter valid fields; 4. Save | Name: Accessories | Category is saved and visible in the list | P1 | Positive |
 | CAT-002 | Reject duplicate slug | Category with slug accessories exists | 1. Open Create; 2. Enter duplicate slug; 3. Save | Slug: accessories | Request is rejected with an understandable validation message; no duplicate is created | P1 | Negative |
 
-Use `<escape>&lt;/escape>` only if required for Markdown literals. Keep steps numbered within the cell separated by `;` or `<escape>&lt;br&gt;</escape>` in external Markdown tools if supported. Prefer semicolons for portability.
+Keep table cells on one line; separate numbered steps with semicolons for portable Markdown.
 
 ## Conventions
 
