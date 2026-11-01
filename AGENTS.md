@@ -11,3 +11,7 @@ This is the Ecommerce monorepo. Read `docs/06-development/workflow.md` and `docs
 Use `$cr-plan`, `$cr-implement`, `$cr-review` for change-request stages and `$architecture-review` for design trade-offs. Planning and review remain read-only.
 
 Code intelligence is optional: see `docs/06-development/code-intelligence.md` for GitNexus and Serena setup. Skills must work without MCP by inspecting source directly; never treat graph results as authoritative without source verification. Use `$codebase-exploration` for tracing unfamiliar flows.
+
+## Skills and artifacts
+
+Read `docs/06-development/agent-skills.md` for skill routing and `docs/06-development/agent-artifacts.md` for Markdown output and retention. `$manual-test-cases` creates table-based QA cases. After completing an approved implementation, `$cr-implement` writes a beginner-friendly code-reading walkthrough in `.agent-work/implementations/<cr-id>.md`. Never commit `.agent-work/`.
