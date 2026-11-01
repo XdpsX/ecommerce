@@ -23,9 +23,9 @@ foreach ($service in $services) {
     Write-Host "[$service] Running Maven $($goals -join ' ')" -ForegroundColor Cyan
     Push-Location $directory
     try {
-        & $wrapper @goals
+        & cmd.exe /d /c ('"' + $wrapper + '" ' + ($goals -join ' '))
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "[$service] Failed with exit code $LASTEXITCODE"
+            Write-Host "[$service] Failed with exit code $LASTEXITCODE" -ForegroundColor Red
             exit $LASTEXITCODE
         }
     }
