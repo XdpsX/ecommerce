@@ -1,0 +1,25 @@
+# Agent skills: responsibilities and routing
+
+Use the smallest relevant skill. The root `AGENTS.md` owns project-wide rules, `workflow.md` owns the CR lifecycle, `conventions.md` owns engineering rules, and `code-intelligence.md` owns optional GitNexus/Serena setup. Skills should refer to these documents rather than duplicating them.
+
+| Skill | When to use | Output |
+| --- | --- | --- |
+| `$cr-plan` | Scope and investigate a change before coding | Inline summary; local plan Markdown for nontrivial CR |
+| `$cr-implement` | Implement an approved CR | Code and tests; always a local beginner code-reading walkthrough |
+| `$cr-review` | Independent findings-first review | Inline findings; local Markdown for full CR |
+| `$architecture-review` | Compare architecture options and ownership | Inline recommendation; ADR only if approved |
+| `$codebase-exploration` | Trace unfamiliar symbols and flows | Source-backed explanation |
+| `$manual-test-cases` | Design manual QA scenarios | Local Markdown table; optional reviewed committed suite |
+| `$impeccable` | UI design, accessibility, polish, critique | UI-specific results per upstream skill |
+
+## Composition
+
+For a backend CR, use plan → implement → review; call codebase exploration when needed. For a frontend UI CR, add Impeccable when the UI needs design work. For cross-service CRs, identify ownership and contracts before implementation. Generate manual test cases when QA coverage is requested or in acceptance criteria.
+
+## Rules
+
+- Do not install or modify community skills without a separately approved task.
+- Preserve Impeccable's upstream files and hook settings.
+- GitNexus and Serena are optional; verify any inference in source.
+- A skill does not grant permission to create branches, commit, push, or open PRs.
+- Consult `agent-artifacts.md` for what to write and what to commit.
