@@ -40,14 +40,6 @@ jobs:
         run: chmod +x ./mvnw
       - name: Build and test (includes Spotless check)
         run: ./mvnw -B --no-transfer-progress verify
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: notification-coverage-report
-          path: services/notification/target/site/jacoco/
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
