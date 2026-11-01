@@ -32,3 +32,6 @@ Thumbs.db
 .logs/
 # Serena
 .serena/
+
+# Local AI agent artifacts
+.agent-work/
