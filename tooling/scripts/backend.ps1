@@ -53,10 +53,20 @@ while ($pending.Count -gt 0 -or $running.Count -gt 0) {
         }
 
         try {
-            # cmd.exe is required for reliable invocation of Windows .cmd wrappers.
-            $arguments = '/d /c "' + $wrapper + '" ' + $goal
-            $process = Start-Process -FilePath 'cmd.exe' -ArgumentList $arguments -WorkingDirectory $directory -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru -WindowStyle Hidden
-            $running += [pscustomobject]@{ Service = $service; Process = $process; Started = $started }
+            $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+            $startInfo.FileName = 'cmd.exe'
+            $startInfo.Arguments = '/d /c mvnw.cmd ' + $goal
+            $startInfo.WorkingDirectory = $directory
+            $startInfo.UseShellExecute = $false
+            $startInfo.CreateNoWindow = $true
+            $startInfo.RedirectStandardOutput = $true
+            $startInfo.RedirectStandardError = $true
+            $process = [System.Diagnostics.Process]::new()
+            $process.StartInfo = $startInfo
+            if (-not $process.Start()) { throw 'Unable to start Maven wrapper' }
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $running += [pscustomobject]@{ Service = $service; Process = $process; Started = $started; StdoutTask = $stdoutTask; StderrTask = $stderrTask; Stdout = $stdout; Stderr = $stderr }
             Write-Host "[$service] Started (PID $($process.Id))" -ForegroundColor Cyan
         } catch {
             $results += [pscustomobject]@{ Service = $service; ExitCode = 1; Seconds = 0; Error = $_.Exception.Message }
@@ -78,6 +88,8 @@ while ($pending.Count -gt 0 -or $running.Count -gt 0) {
         # WaitForExit ensures the process handle is signaled before reading ExitCode.
         $task.Process.WaitForExit()
         $exitCode = $task.Process.ExitCode
+        [System.IO.File]::WriteAllText($task.Stdout, $task.StdoutTask.GetAwaiter().GetResult())
+        [System.IO.File]::WriteAllText($task.Stderr, $task.StderrTask.GetAwaiter().GetResult())
         if ($null -eq $exitCode) {
             $exitCode = 1
             Write-Host "[$($task.Service)] Exit code unavailable; inspect process logs" -ForegroundColor Red
