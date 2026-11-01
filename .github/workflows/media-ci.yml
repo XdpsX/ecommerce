@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'services/media/**'
+      - '!services/media/**/*.md'
       - '.github/workflows/media-ci.yml'
   push:
-    branches: ['chore/init-repo', 'main']
+    branches: ['develop', 'main']
     paths:
       - 'services/media/**'
+      - '!services/media/**/*.md'
       - '.github/workflows/media-ci.yml'
   workflow_dispatch:
 

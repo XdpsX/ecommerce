@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'services/identity/**'
+      - '!services/identity/**/*.md'
       - '.github/workflows/identity-ci.yml'
   push:
-    branches: ['chore/init-repo', 'main']
+    branches: ['develop', 'main']
     paths:
       - 'services/identity/**'
+      - '!services/identity/**/*.md'
       - '.github/workflows/identity-ci.yml'
   workflow_dispatch:
 

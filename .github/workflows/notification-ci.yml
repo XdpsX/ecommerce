@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'services/notification/**'
+      - '!services/notification/**/*.md'
       - '.github/workflows/notification-ci.yml'
   push:
-    branches: ['chore/init-repo', 'main']
+    branches: ['develop', 'main']
     paths:
       - 'services/notification/**'
+      - '!services/notification/**/*.md'
       - '.github/workflows/notification-ci.yml'
   workflow_dispatch:
 

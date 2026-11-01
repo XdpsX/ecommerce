@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'web/backoffice/**'
+      - '!web/backoffice/**/*.md'
       - '.github/workflows/backoffice-ci.yml'
   push:
-    branches: ['chore/init-repo', 'main']
+    branches: ['develop', 'main']
     paths:
       - 'web/backoffice/**'
+      - '!web/backoffice/**/*.md'
       - '.github/workflows/backoffice-ci.yml'
   workflow_dispatch:
 
