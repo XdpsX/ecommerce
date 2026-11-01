@@ -6,6 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import stylistic from '@stylistic/eslint-plugin'
 
 export default defineConfig([
   globalIgnores([
@@ -33,6 +34,7 @@ export default defineConfig([
     },
     plugins: {
       'simple-import-sort': simpleImportSort,
+      '@stylistic': stylistic,
     },
     rules: {
       '@typescript-eslint/no-deprecated': 'error',
@@ -41,7 +43,12 @@ export default defineConfig([
       '@typescript-eslint/only-throw-error': 'off',
       '@typescript-eslint/prefer-promise-reject-errors': 'off',
       'simple-import-sort/exports': 'error',
-      'simple-import-sort/imports': 'error',
+      'simple-import-sort/imports': [
+        'error',
+        {
+          groups: [['^']],
+        },
+      ],
       'react-refresh/only-export-components': [
         'error',
         {
@@ -49,6 +56,12 @@ export default defineConfig([
           allowExportNames: ['Route', 'buttonVariants'],
         },
       ],
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', prev: 'import', next: '*', },
+        { blankLine: 'any', prev: 'import', next: 'import', },
+        { blankLine: 'always', prev: '*', next: 'return' },
+      ]
     },
   },
   {

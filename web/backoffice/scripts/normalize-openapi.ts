@@ -6,6 +6,7 @@ const normalizedSecuritySchemeName = 'bearerAuth'
 function renameSecuritySchemeKey(value: unknown): void {
   if (Array.isArray(value)) {
     value.forEach(renameSecuritySchemeKey)
+
     return
   }
 
@@ -32,5 +33,6 @@ function renameSecuritySchemeKey(value: unknown): void {
 export default defineTransformer((spec) => {
   const normalizedSpec = structuredClone(spec)
   renameSecuritySchemeKey(normalizedSpec)
+
   return normalizedSpec
 })

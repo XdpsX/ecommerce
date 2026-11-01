@@ -1,6 +1,5 @@
-import { defineConfig } from 'orval'
-
 import normalizeOpenApi from './scripts/normalize-openapi.ts'
+import { defineConfig } from 'orval'
 
 const openApiTarget =
   process.env.OPENAPI_URL ?? 'http://localhost:8080/v3/api-docs/backoffice'
