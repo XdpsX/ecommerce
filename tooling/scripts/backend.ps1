@@ -75,7 +75,13 @@ while ($pending.Count -gt 0 -or $running.Count -gt 0) {
             continue
         }
 
+        # WaitForExit ensures the process handle is signaled before reading ExitCode.
+        $task.Process.WaitForExit()
         $exitCode = $task.Process.ExitCode
+        if ($null -eq $exitCode) {
+            $exitCode = 1
+            Write-Host "[$($task.Service)] Exit code unavailable; inspect process logs" -ForegroundColor Red
+        }
         $seconds = [math]::Round(((Get-Date) - $task.Started).TotalSeconds, 1)
         $results += [pscustomobject]@{ Service = $task.Service; ExitCode = $exitCode; Seconds = $seconds; Error = '' }
         if ($exitCode -eq 0) {
