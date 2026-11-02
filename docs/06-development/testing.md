@@ -7,13 +7,20 @@ This document is the single source of truth for test selection, conventions, TDD
 | Area | Test type | Purpose | Default tooling |
 | --- | --- | --- | --- |
 | Backend | Unit (UT) | Isolated domain rules and meaningful application logic | JUnit, Mockito where needed |
-| Backend | Integration (IT) | HTTP/API, persistence, security, transactions and important infrastructure boundaries | Spring Boot Test, Testcontainers when needed |
+| Backend | Integration (IT) | HTTP/API, persistence, security, transactions and important infrastructure boundaries | Spring Boot Test, Testcontainers for database IT |
 | Frontend | Unit (UT) | Pure functions, transformations, validation helpers and nontrivial hooks | Vitest |
 | Frontend | Component | Rendered behavior, accessibility and user interaction (forms, tables, actions) | Vitest, React Testing Library, user-event |
 | Frontend | Integration (IT) | Feature/page behavior across components, router, state and HTTP boundary | Vitest, React Testing Library, MSW |
 | E2E | End-to-end | Critical business journeys against a running integrated system | Playwright in the separate E2E repository |
 
 Frontend component and integration tests may use the same runner and `.test.ts(x)` suffix; they differ by scope, not tooling. MSW mocks HTTP boundaries for FE IT: do not require a live backend for ordinary frontend CI. Backend IT should use real infrastructure where the boundary under test matters; avoid mocking the very boundary being verified.
+
+## Backend database integration tests
+
+- Use Testcontainers with the application's real database engine (e.g. PostgreSQL); run actual schema migrations.
+- Default to a static `@Container` per IT class (`@Testcontainers`), shared by its test methods and stopped after the class. Do not start a container per test method.
+- Isolate test data: use transactional rollback where valid; otherwise clean/reset data explicitly. Tests must not depend on execution order or another test's data.
+- Do not enable reusable containers across test runs by default. Revisit suite-wide sharing only if startup cost warrants it, with explicit lifecycle and isolation safeguards.
 
 ## Selection and coverage
 
