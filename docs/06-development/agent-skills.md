@@ -10,11 +10,13 @@ Use the smallest relevant skill. The root `AGENTS.md` owns project-wide rules, `
 | `$architecture-review` | Compare architecture options and ownership | Inline recommendation; ADR only if approved |
 | `$codebase-exploration` | Trace unfamiliar symbols and flows | Source-backed explanation |
 | `$manual-test-cases` | Design manual QA scenarios | Local Markdown table; optional reviewed committed suite |
+| `$docs-audit` | Read-only checks for documentation drift, links and unsupported claims | Findings with source evidence; optional ignored local report |
+| `$docs-update` | Approved, scoped changes to durable documentation | Updated docs, link verification and diff summary |
 | `$impeccable` | UI design, accessibility, polish, critique | UI-specific results per upstream skill |
 
 ## Composition
 
-For a backend CR, use plan → implement → review; call codebase exploration when needed. For a frontend UI CR, add Impeccable when the UI needs design work. For cross-service CRs, identify ownership and contracts before implementation. Generate manual test cases when QA coverage is requested or in acceptance criteria.
+For a backend CR, use plan → implement → review; call codebase exploration when needed. For a frontend UI CR, add Impeccable when the UI needs design work. For cross-service CRs, identify ownership and contracts before implementation. Generate manual test cases when QA coverage is requested or in acceptance criteria. Use `$docs-audit` to check documentation drift and `$docs-update` only when changes are authorized; see `documentation.md`.
 
 ## Rules
 
