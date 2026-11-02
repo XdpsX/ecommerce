@@ -33,6 +33,12 @@ See [bootstrap and verification](docs/06-development/bootstrap.md) for applicati
 - [Documentation governance](docs/06-development/documentation.md)
 - [Architecture scope](docs/03-architecture/README.md)
 
-## Source repositories
+## Reference repositories
 
-Migration references: [Ecommerce backend](https://github.com/XdpsX/ecommerce-be), [Backoffice](https://github.com/XdpsX/ecommerce-backoffice), [Identity](https://github.com/XdpsX/practical-identity), and [Notification](https://github.com/XdpsX/notification-service). These repositories are references, not evidence that their features have been migrated here.
+These repositories are **references only**, not migration targets or required implementations. We may redesign business rules, architecture, APIs, persistence and UI/UX rather than copying existing code or screens. The [product roadmap](docs/01-product/roadmap.md) defines the single-shop-first scope.
+
+- **Legacy Ecommerce:** [Ecommerce backend](https://github.com/XdpsX/ecommerce-be), [Backoffice](https://github.com/XdpsX/ecommerce-backoffice) — discover existing modules and business capabilities.
+- **Service references:** [Identity](https://github.com/XdpsX/practical-identity), [Notification](https://github.com/XdpsX/notification-service) — compare service designs and practices.
+- **External references:** [YAS](https://github.com/nashtech-garage/yas), [Hospital Management System](https://github.com/qwan30/hospital-management-system) — selectively study architecture, organization and engineering practices, even across domains.
+
+Reference repositories are not evidence that their features exist in this monorepo.

@@ -1,24 +1,23 @@
-# Product roadmap (proposed)
+# Product roadmap
 
-This document describes intended milestones and sequencing, **not** completed functionality or live progress. The monorepo is currently in bootstrap; application skeletons are not evidence of migrated business features. GitHub Milestones and Projects are the source of truth for issue progress.
+This document describes the agreed product direction, not live implementation status. GitHub Milestones and Projects track delivery progress. The monorepo is currently in M0 bootstrap; application skeletons are not evidence of completed business features.
 
-| Milestone | Intended outcome |
+| Milestone | Target outcome |
 | --- | --- |
-| M0 — Platform Foundation & Repository Bootstrap | Monorepo skeleton, CI, developer workflows, documentation and testing conventions |
-| M1 — Ecommerce Domain Renewal | Rebuild and validate core ecommerce domain capabilities through backend and Backoffice vertical slices |
-| M2 — Storefront & Shopping Experience | Customer-facing browsing, cart and checkout experiences |
-| M3 — Marketplace & Multi-Vendor | Seller/shop ownership, permissions and marketplace capabilities |
-| M4 — Distributed Systems & Platform Evolution | Reliability, observability, events and advanced platform engineering |
+| M0 — Platform Foundation & Repository Bootstrap | Establish monorepo, CI, developer workflow, testing and documentation foundations |
+| M1 — Single-Shop Backoffice | Complete the backend capabilities and Backoffice needed to operate **one shop**, using existing reference modules as a scope starting point |
+| M2 — Single-Shop Storefront | Complete the customer-facing Storefront and supported shopping journeys for **one shop**, building on M1 capabilities |
+| M3 — Multi-Shop / Marketplace | Evolve the single-shop system to support multiple shops, including appropriate ownership, authorization and data boundaries |
+| M4+ | Not defined yet; decide after learning from earlier milestones |
 
-M2–M4 are directional proposals, not approved delivery commitments. Do not assume all capabilities exist in the current repository.
+## Scope and delivery principles
 
-## Proposed M1 sequence
+- **Single-shop first:** M1 and M2 target one shop; multi-shop behavior belongs to M3. Avoid premature marketplace complexity while keeping reasonable extension points.
+- **Capability-driven, not code-porting:** inventory existing modules in reference repositories to identify business capabilities. Reassess requirements and implementation; do not assume old code, APIs, database models or UI are authoritative.
+- **Backend + UI as a working outcome:** M1 includes backend business rules, API, authorization, tests and Backoffice screens—not just frontend pages. M2 adds the complete supported customer-facing flows.
+- **Design improvements encouraged:** Backoffice and Storefront may use new UX/UI rather than reproducing legacy screens; Impeccable may be used in the design workflow.
+- **Incremental planning:** audit current and reference implementations before dividing M1 into phases and actionable CRs. Refine near-term work first; do not commit to a module-by-module schedule prematurely.
 
-1. **Foundation validation and Category pilot:** confirm API, test infrastructure and Backoffice conventions with one complete vertical slice.
-2. **Catalog management:** Brand, Product and Media.
-3. **Inventory and pricing:** SKU, stock and pricing behavior.
-4. **Customer and cart:** customer-facing state and cart domain.
-5. **Order and checkout:** order lifecycle and integration boundaries.
-6. **Hardening:** security, contract verification, E2E and documentation review.
+## Reference repositories
 
-Before committing to this scope, audit the existing reference repositories and current monorepo implementation. Refine only the next few CRs into actionable issues; revisit sequencing as dependencies become clear. Avoid implementing full multi-vendor scope in M1 solely for future-proofing.
+Legacy Ecommerce backend and Backoffice are a starting point for capability discovery, not a mandatory implementation specification. Identity, Notification and external examples provide optional architectural and engineering ideas. Evaluate each pattern for this project's needs rather than copying it by default. See the repository README for the reference links.
