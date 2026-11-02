@@ -1,4 +1,5 @@
 version: 2
+
 updates:
   - package-ecosystem: maven
     directories:
@@ -9,9 +10,14 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      timezone: Asia/Ho_Chi_Minh
+      time: "02:00"
+      timezone: Etc/UTC
     open-pull-requests-limit: 5
     labels: [dependencies]
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       maven-minor-patch:
         patterns: ["*"]
@@ -22,9 +28,14 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      timezone: Asia/Ho_Chi_Minh
+      time: "02:00"
+      timezone: Etc/UTC
     open-pull-requests-limit: 5
     labels: [dependencies]
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       frontend-minor-patch:
         patterns: ["*"]
@@ -35,6 +46,15 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      timezone: Asia/Ho_Chi_Minh
+      time: "02:00"
+      timezone: Etc/UTC
     open-pull-requests-limit: 5
     labels: [dependencies]
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
