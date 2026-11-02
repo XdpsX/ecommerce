@@ -1,0 +1,77 @@
+name: "Change Request"
+description: "Propose a scoped change for the Ecommerce monorepo."
+title: "[CR] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One issue normally represents one change request (CR). Use the milestone integration branch as the base for task branches. See [workflow](https://github.com/XdpsX/ecommerce/blob/chore/init-repo/docs/06-development/workflow.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Context
+      description: What is wrong, missing, or worth improving? Include relevant current behavior and evidence when available.
+      placeholder: "Current behavior, pain point, or motivation..."
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Goal / Expected outcome
+      description: Describe the observable result, not just a proposed implementation.
+      placeholder: "After this change, ..."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope / Affected areas
+      description: Name affected applications/modules and important boundaries. For cross-service changes, identify producers, consumers, contracts and data owner.
+      placeholder: |
+        - Affected: services/ecommerce/...
+        - Contracts/consumers (if any): ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Write verifiable outcomes. Add only criteria relevant to this CR.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Explicitly exclude tempting adjacent work; use N/A if none.
+      placeholder: "N/A"
+    validations:
+      required: false
+  - type: input
+    id: integration_branch
+    attributes:
+      label: Target integration branch
+      description: Milestone branch or develop, as appropriate. This is not permission for an agent to create branches.
+      placeholder: "develop"
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Dependencies / Risks / Open questions
+      description: Include migrations, compatibility, security, rollout, decisions or dependencies when relevant.
+      placeholder: "N/A"
+    validations:
+      required: false
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification approach
+      description: Which focused tests, commands, manual checks or consumer checks would establish success?
+      placeholder: "Proposed checks..."
+    validations:
+      required: false

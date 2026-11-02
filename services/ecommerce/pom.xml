@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.ecommerce</groupId>
-	<artifactId>api</artifactId>
+	<artifactId>ecommerce</artifactId>
 	<version>${revision}</version>
-	<name>API</name>
+	<name>Ecommerce</name>
 	<description>E-commerce API</description>
 	<url/>
 	<licenses>
@@ -29,6 +29,7 @@
 	<properties>
 		<revision>0.0.1-SNAPSHOT</revision>
 		<java.version>25</java.version>
+		<spotless.version>3.10.2</spotless.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -48,6 +49,28 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>${spotless.version}</version>
+				<configuration>
+					<java>
+						<palantirJavaFormat />
+						<removeUnusedImports/>
+						<toggleOffOn/>
+						<trimTrailingWhitespace/>
+						<endWithNewline/>
+						<importOrder><order>java,jakarta,org,com,com.diffplug,</order></importOrder>
+					</java>
+				</configuration>
+				<executions>
+					<execution>
+						<goals><goal>check</goal></goals>
+						<phase>validate</phase>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

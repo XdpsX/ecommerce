@@ -1,0 +1,47 @@
+name: Backoffice CI
+
+on:
+  pull_request:
+    paths:
+      - 'web/backoffice/**'
+      - '!web/backoffice/**/*.md'
+      - '.github/workflows/backoffice-ci.yml'
+  push:
+    branches: ['develop', 'main', 'phase/**']
+    paths:
+      - 'web/backoffice/**'
+      - '!web/backoffice/**/*.md'
+      - '.github/workflows/backoffice-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backoffice-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web/backoffice
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pnpm
+        run: npm install --global pnpm@12.9.1
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check formatting
+        run: pnpm format:check
+      - name: Lint
+        run: pnpm lint
+      - name: Unit tests
+        run: pnpm test
+      - name: Build
+        run: pnpm build

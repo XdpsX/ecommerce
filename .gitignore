@@ -28,3 +28,10 @@ Thumbs.db
 # Local tooling caches
 .tool-cache/
 .cache/
+# Local build logs
+.logs/
+# Serena
+.serena/
+
+# Local AI agent artifacts
+.agent-work/

@@ -1,0 +1,32 @@
+# Change request workflow
+
+One issue normally represents one change request (CR). Small, low-risk bootstrap setup may proceed directly on the integration branch when explicitly authorized.
+
+1. **Scope:** Record problem, intended outcome, acceptance criteria, affected applications and out-of-scope work. Identify the milestone integration branch.
+2. **Branch:** For ordinary CRs, create a task branch from the milestone integration branch and target that branch with the PR. Never create or switch branches without authorization.
+3. **Plan (`$cr-plan`):** Inspect existing behavior, ownership, interfaces, dependencies, migration and compatibility risks. Resolve decisions that materially affect behavior before implementation. Planning is read-only. Identify any durable docs affected by the proposed change.
+4. **Implement (`$cr-implement`):** Deliver the smallest coherent approved slice; add proportional tests, required migrations and contract updates. Use the affected application's tooling and check the final diff. Use `$docs-update` for approved documentation changes when necessary.
+5. **Review (`$cr-review`):** Review the complete change against its intended base and acceptance criteria. Prioritize correctness, security, data integrity, compatibility, boundaries, tests and documentation drift. Use `$docs-audit` for evidence-backed documentation checks when relevant. Review is read-only.
+6. **PR:** Reference the issue when present, report verification and risks, and merge after required checks and human review. Only create commits or PRs when requested.
+
+For cross-service work, name the producer, consumer, contract, data owner and rollout/compatibility considerations. Keep ephemeral plans in the issue or PR; write durable documentation only when useful beyond the CR.
+
+## Agent artifacts
+
+See `agent-artifacts.md`. Nontrivial CR plans: `.agent-work/plans/<cr-id>.md`; full reviews: `.agent-work/reviews/<cr-id>.md`; implementation code-reading walkthroughs: `.agent-work/implementations/<cr-id>.md`; QA drafts: `.agent-work/test-cases/<feature>.md`. These are local and ignored. Only reviewed reusable manual test suites belong in `docs/qa/manual/` and are committed after approval.
+
+## Planning and tracking
+
+- **Milestone:** a major deliverable or outcome (for example M0 bootstrap, M1 domain renewal). Assign issues to the relevant GitHub Milestone.
+- **Phase:** a delivery stage within a milestone; track it with a GitHub Project field/view, not a separate milestone by default.
+- **Backlog:** GitHub Issues for proposed work. Keep distant work at capability level; refine the next few CRs with scope, acceptance criteria and dependencies.
+- **CR/task:** one issue normally maps to one focused implementation PR. Implementation subtasks stay in the issue or plan unless independently deliverable.
+- **GitHub Projects:** canonical live status and prioritization (Backlog → Ready → In Progress → In Review → Done). Issues define scope, PRs record implementation and verification, docs preserve durable decisions. Do not duplicate live status in Markdown.
+- **Roadmap:** [Product roadmap](../01-product/roadmap.md) describes intended outcomes and sequence, not live issue progress. Link milestone/Project views from the README when available.
+
+## Branches and CI
+
+- Use a milestone integration branch such as `phase/m1-ecommerce-domain-renewal`; create CR branches from it and target it with PRs. Merge the phase branch into `develop` through a reviewed PR when ready; promote `develop` to `main` via PR according to release needs.
+- Application CI runs on relevant-path PRs (including PRs targeting `phase/**`) and on pushes to `phase/**`, `develop`, and `main`. Workflow dispatch remains available. Path filters may skip checks for unaffected applications.
+- Require successful applicable checks and review before merging. Branch protection/rulesets must be configured separately in GitHub settings; workflow triggers alone do not enforce merge restrictions.
+- Verify workflow execution and required-check names before enabling branch rules. Avoid requiring path-filtered jobs unconditionally, as skipped workflows can leave required checks pending.

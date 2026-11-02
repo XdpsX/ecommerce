@@ -1,13 +1,10 @@
-package com.ecommerce.api;
+package com.ecommerce.notification;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class EcommerceApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
+class NotificationApplicationTests {
+    @Test
+    void contextLoads() {}
 }
