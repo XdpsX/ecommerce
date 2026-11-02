@@ -10,12 +10,14 @@ Store reusable, human-reviewed manual test suites here. Drafts belong in `.agent
 - Preconditions shared by all cases:
 - Owner / last reviewed:
 
-## Test cases
+## Test cases (illustrative only)
+
+**The rows below demonstrate the Markdown format. They are not verified test cases and do not imply that Category screens or APIs are implemented in this monorepo.** Replace them with scenarios backed by approved requirements and actual behavior before promoting a suite.
 
 | ID | Scenario | Preconditions | Steps | Test data | Expected result | Priority | Type |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| CAT-001 | Create category with valid data | Admin is signed in | 1. Open Categories; 2. Select Create; 3. Enter valid fields; 4. Save | Name: Accessories | Category is saved and visible in the list | P1 | Positive |
-| CAT-002 | Reject duplicate slug | Category with slug accessories exists | 1. Open Create; 2. Enter duplicate slug; 3. Save | Slug: accessories | Request is rejected with an understandable validation message; no duplicate is created | P1 | Negative |
+| EX-001 | Create an example item | Example administrator is signed in | 1. Open example list; 2. Select Create; 3. Enter data; 4. Save | Name: Sample | Example item is displayed | P1 | Positive |
+| EX-002 | Reject invalid example data | Example form is available | 1. Open example form; 2. Enter invalid data; 3. Save | Name: empty | Validation message is displayed | P1 | Negative |
 
 Keep table cells on one line; separate numbered steps with semicolons for portable Markdown.
 
