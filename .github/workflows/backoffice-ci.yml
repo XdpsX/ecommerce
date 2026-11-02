@@ -7,7 +7,7 @@ on:
       - '!web/backoffice/**/*.md'
       - '.github/workflows/backoffice-ci.yml'
   push:
-    branches: ['develop', 'main']
+    branches: ['develop', 'main', 'phase/**']
     paths:
       - 'web/backoffice/**'
       - '!web/backoffice/**/*.md'

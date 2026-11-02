@@ -14,3 +14,19 @@ For cross-service work, name the producer, consumer, contract, data owner and ro
 ## Agent artifacts
 
 See `agent-artifacts.md`. Nontrivial CR plans: `.agent-work/plans/<cr-id>.md`; full reviews: `.agent-work/reviews/<cr-id>.md`; implementation code-reading walkthroughs: `.agent-work/implementations/<cr-id>.md`; QA drafts: `.agent-work/test-cases/<feature>.md`. These are local and ignored. Only reviewed reusable manual test suites belong in `docs/qa/manual/` and are committed after approval.
+
+## Planning and tracking
+
+- **Milestone:** a major deliverable or outcome (for example M0 bootstrap, M1 domain renewal). Assign issues to the relevant GitHub Milestone.
+- **Phase:** a delivery stage within a milestone; track it with a GitHub Project field/view, not a separate milestone by default.
+- **Backlog:** GitHub Issues for proposed work. Keep distant work at capability level; refine the next few CRs with scope, acceptance criteria and dependencies.
+- **CR/task:** one issue normally maps to one focused implementation PR. Implementation subtasks stay in the issue or plan unless independently deliverable.
+- **GitHub Projects:** canonical live status and prioritization (Backlog → Ready → In Progress → In Review → Done). Issues define scope, PRs record implementation and verification, docs preserve durable decisions. Do not duplicate live status in Markdown.
+- **Roadmap:** [Product roadmap](../01-product/roadmap.md) describes intended outcomes and sequence, not live issue progress. Link milestone/Project views from the README when available.
+
+## Branches and CI
+
+- Use a milestone integration branch such as `phase/m1-ecommerce-domain-renewal`; create CR branches from it and target it with PRs. Merge the phase branch into `develop` through a reviewed PR when ready; promote `develop` to `main` via PR according to release needs.
+- Application CI runs on relevant-path PRs (including PRs targeting `phase/**`) and on pushes to `phase/**`, `develop`, and `main`. Workflow dispatch remains available. Path filters may skip checks for unaffected applications.
+- Require successful applicable checks and review before merging. Branch protection/rulesets must be configured separately in GitHub settings; workflow triggers alone do not enforce merge restrictions.
+- Verify workflow execution and required-check names before enabling branch rules. Avoid requiring path-filtered jobs unconditionally, as skipped workflows can leave required checks pending.

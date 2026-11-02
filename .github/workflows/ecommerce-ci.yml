@@ -7,7 +7,7 @@ on:
       - '!services/ecommerce/**/*.md'
       - '.github/workflows/ecommerce-ci.yml'
   push:
-    branches: ['develop', 'main']
+    branches: ['develop', 'main', 'phase/**']
     paths:
       - 'services/ecommerce/**'
       - '!services/ecommerce/**/*.md'

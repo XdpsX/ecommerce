@@ -2,6 +2,10 @@
 
 This index covers **durable** project documentation. Temporary CR plans, reviews and implementation walkthroughs belong under the ignored `.agent-work/` directory; do not treat them as architecture or product specifications.
 
+## Product planning
+
+- [Roadmap and milestone direction](01-product/roadmap.md)
+
 ## Architecture
 
 - [Current repository boundaries and target direction](03-architecture/README.md)
@@ -10,7 +14,7 @@ This index covers **durable** project documentation. Temporary CR plans, reviews
 
 - [Bootstrap and verification](06-development/bootstrap.md)
 - [Engineering conventions](06-development/conventions.md)
-- [Change request workflow](06-development/workflow.md)
+- [Change request workflow and GitHub tracking](06-development/workflow.md)
 - [Agent skill routing](06-development/agent-skills.md)
 - [Agent artifact retention](06-development/agent-artifacts.md)
 - [Code intelligence: GitNexus and Serena](06-development/code-intelligence.md)

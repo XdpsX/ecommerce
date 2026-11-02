@@ -27,6 +27,7 @@ See [bootstrap and verification](docs/06-development/bootstrap.md) for applicati
 ## Documentation and workflow
 
 - [Documentation index](docs/README.md)
+- [Product roadmap (planned, not implementation status)](docs/01-product/roadmap.md)
 - [Change request workflow](docs/06-development/workflow.md)
 - [Agent skills](docs/06-development/agent-skills.md)
 - [Documentation governance](docs/06-development/documentation.md)

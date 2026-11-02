@@ -7,7 +7,7 @@ on:
       - '!services/media/**/*.md'
       - '.github/workflows/media-ci.yml'
   push:
-    branches: ['develop', 'main']
+    branches: ['develop', 'main', 'phase/**']
     paths:
       - 'services/media/**'
       - '!services/media/**/*.md'
