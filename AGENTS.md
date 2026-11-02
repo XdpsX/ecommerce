@@ -15,3 +15,5 @@ Code intelligence is optional: see `docs/06-development/code-intelligence.md` fo
 ## Skills and artifacts
 
 Read `docs/06-development/agent-skills.md` for skill routing and `docs/06-development/agent-artifacts.md` for Markdown output and retention. `$manual-test-cases` creates table-based QA cases. After completing an approved implementation, `$cr-implement` writes a beginner-friendly code-reading walkthrough in `.agent-work/implementations/<cr-id>.md`. Never commit `.agent-work/`.
+
+Documentation governance: read `docs/06-development/documentation.md`. Use `$docs-audit` for read-only, source-backed documentation checks and `$docs-update` for explicitly approved, scoped edits. Never infer permission to edit from an audit request.
