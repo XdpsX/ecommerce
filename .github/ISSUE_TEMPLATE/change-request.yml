@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        One issue normally represents one change request (CR). Use the milestone integration branch as the base for task branches. See [workflow](../../docs/06-development/workflow.md).
+        One issue normally represents one change request (CR). Use the milestone integration branch as the base for task branches. See [workflow](https://github.com/XdpsX/ecommerce/blob/chore/init-repo/docs/06-development/workflow.md).
   - type: textarea
     id: problem
     attributes:
