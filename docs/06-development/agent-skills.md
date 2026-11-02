@@ -16,7 +16,7 @@ Use the smallest relevant skill. The root `AGENTS.md` owns project-wide rules, `
 
 ## Composition
 
-For a backend CR, use plan → implement → review; call codebase exploration when needed. For a frontend UI CR, add Impeccable when the UI needs design work. For cross-service CRs, identify ownership and contracts before implementation. Generate manual test cases when QA coverage is requested or in acceptance criteria. Use `$docs-audit` to check documentation drift and `$docs-update` only when changes are authorized; see `documentation.md`.
+For every CR, consult `testing.md`: plan selects risk-based checks from acceptance criteria; implementation adds appropriate tests (selective TDD); review checks behavioral coverage and reported results. For a backend CR, use plan → implement → review; call codebase exploration when needed. For a frontend UI CR, add Impeccable when the UI needs design work. For cross-service CRs, identify ownership and contracts before implementation. Generate manual test cases when QA coverage is requested or in acceptance criteria. Use `$docs-audit` to check documentation drift and `$docs-update` only when changes are authorized; see `documentation.md`.
 
 ## Rules
 

@@ -10,6 +10,4 @@
 
 ## Testing and verification
 
-Choose a small, risk-proportionate set: (1) the representative main behavior, (2) one meaningful failure when relevant, and (3) a useful boundary case when it adds confidence. Do not force all three for trivial changes.
-
-Start with focused tests, lint/format checks and builds appropriate to affected applications. Run broader integration or consumer checks when shared contracts or infrastructure change. Do not assume Maven, Liquibase or frontend tooling applies to every application. Do not run source-mutating format commands during read-only review. Report exact commands and any checks not run.
+Follow [Testing strategy](testing.md) for test types, selection, naming, TDD, snapshot policy and CI expectations. Keep verification risk-proportionate and report exact commands, outcomes, skipped checks and residual risks. Do not run source-mutating format commands during read-only review.

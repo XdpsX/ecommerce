@@ -5,7 +5,7 @@ This is the Ecommerce monorepo. Read `docs/06-development/workflow.md` and `docs
 - Bootstrap stage: `services/` contains backend services and `web/` contains frontends. Do not bulk-migrate business code during bootstrap.
 - Keep changes scoped to the approved task; preserve unrelated changes and avoid speculative infrastructure or abstractions.
 - Identify affected applications, ownership and integration contracts before cross-service changes.
-- Run proportional, application-specific verification and report exact commands, skipped checks and residual risks.
+- Follow `docs/06-development/testing.md` for test selection, TDD, snapshots and verification. Report exact commands, skipped checks and residual risks.
 - Do not create branches, commits, push or open PRs unless explicitly requested.
 
 Use `$cr-plan`, `$cr-implement`, `$cr-review` for change-request stages and `$architecture-review` for design trade-offs. Planning and review remain read-only.
