@@ -33,9 +33,28 @@ Frontend component and integration tests may use the same runner and `.test.ts(x
 
 ## Naming and placement
 
-- Backend: keep tests under `src/test` in the corresponding application; prefer `*Test.java` for unit tests and `*IT.java` for integration tests. Ensure Surefire/Failsafe and CI actually discover the chosen patterns before relying on them.
-- Frontend: colocate `*.test.ts` / `*.test.tsx` with source; keep shared test setup, MSW handlers and render helpers under `src/test/`. Prefer role-based queries and user-event.
-- E2E scenarios and screenshot baselines live in the separate E2E repository, not duplicated in frontend CI.
+- **Backend:** mirror production packages under each service's `src/test/java`. Use `*Test.java` for UT (Surefire) and `*IT.java` for IT (Failsafe); verify Maven/CI discovery. Do not create a test class for every production class—test meaningful behavior.
+- **Frontend:** colocate UT, component and feature IT with their source files; use `*.test.ts` for tests without JSX and `*.test.tsx` when JSX is used. Do not split tests into `unit/`, `component/` or `integration/` folders, or require type-specific filename suffixes.
+- **Frontend shared fixtures:** reserve `src/test/` for setup, MSW handlers, factories and shared render helpers, not feature test suites. Prefer role-based queries and user-event.
+- **E2E:** use `*.spec.ts` in the separate Playwright repository; keep screenshot baselines there too.
+
+Example:
+
+```text
+services/ecommerce/src/test/java/.../catalog/category/
+  application/CategoryServiceImplTest.java
+  api/CategoryControllerIT.java
+web/backoffice/src/features/categories/
+  components/CategoryForm.tsx
+  components/CategoryForm.test.tsx
+  utils/categoryTree.ts
+  utils/categoryTree.test.ts
+  pages/CategoryListPage.tsx
+  pages/CategoryListPage.test.tsx
+web/backoffice/src/test/
+  setup.ts
+  mocks/
+```
 
 ## Snapshot policy
 
