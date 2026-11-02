@@ -5,6 +5,7 @@ Separate **working notes** from **durable project knowledge**. Do not commit tem
 | Artifact | Path | Trigger | Commit? |
 | --- | --- | --- | --- |
 | CR plan | `.agent-work/plans/<cr-id>.md` | Nontrivial planning | No |
+| Documentation audit | `.agent-work/reviews/<scope>-docs-audit.md` | Substantial read-only docs audit | No |
 | CR review | `.agent-work/reviews/<cr-id>.md` | Full CR review | No |
 | Code-reading walkthrough | `.agent-work/implementations/<cr-id>.md` | After every completed CR implementation | No |
 | Draft manual test cases | `.agent-work/test-cases/<feature>.md` | QA scenario request | No |
