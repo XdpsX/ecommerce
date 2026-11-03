@@ -1,6 +1,6 @@
-# Testing strategy (v1 — Category pilot)
+# Testing strategy
 
-This document is the single source of truth for test selection, conventions, TDD and snapshot policy across the Ecommerce monorepo. Apply the policy proportionately; do not create tests solely to satisfy a quota. The first evaluation is the Category Management feature across backend and Backoffice.
+This document is the single source of truth for test selection, conventions, TDD and snapshot policy across the Ecommerce monorepo. Apply the policy proportionately; do not create tests solely to satisfy a quota. Evaluate the policy on real features before adding repository-wide gates.
 
 ## Test boundaries
 
@@ -78,10 +78,3 @@ Use TDD selectively, **not** as a universal requirement:
 - Frontend PRs: run relevant Vitest unit/component/integration tests plus applicable lint, format and build checks. FE IT must be deterministic with mocked network boundaries.
 - E2E: execute critical journeys in its separate repository, initially on a suitable integration environment or schedule; do not make the entire E2E suite a default gate for every monorepo PR.
 - Report exact commands and outcomes, skipped checks and residual risks in the PR. Never mark unexecuted checks as passed.
-
-## Category Management pilot and review
-
-- Backend: exercise hierarchy/invariants with UT; persistence, API and authorization with targeted IT.
-- Backoffice: test tree helpers if they contain logic; CategoryForm interaction/validation with component tests; category list loading, errors and mutations with an MSW-backed feature IT.
-- Separate E2E repository: one critical journey (admin creates a category and verifies it appears).
-- After the pilot, assess bugs caught, refactoring confidence, execution speed, flakiness, maintenance cost and TDD usefulness. Adjust this document before making stronger repository-wide requirements.

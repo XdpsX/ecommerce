@@ -1,0 +1,5 @@
+# Full local environment: infrastructure + containerized applications.
+# TODO: Add application services when they are implemented.
+
+include:
+  - path: compose.yml

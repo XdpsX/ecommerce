@@ -22,8 +22,8 @@ Summarize implemented behavior, affected applications/contracts, decisions, exac
 
 ## Optional code intelligence
 
-Follow `docs/06-development/code-intelligence.md`; GitNexus and Serena are optional. Verify graph results against source, use direct source inspection when unavailable, and do not install or index automatically.
+Follow `tooling/code-intelligence.md`; GitNexus and Serena are optional. Verify graph results against source, use direct source inspection when unavailable, and do not install or index automatically.
 
 ## Required code-reading walkthrough
 
-After successfully implementing an approved CR, always create `.agent-work/implementations/<cr-id>.md` (local, uncommitted). Explain in plain language for a newcomer: what changed and why; exact starting file/symbol; numbered reading flow from entry point to output (backend transport/application/domain/persistence or frontend route/component/API as relevant); one realistic example; relevant tests and commands; caveats. Use real paths and avoid unexplained jargon. Keep it brief, not a code dump or change log. Do not fabricate a walkthrough if implementation did not occur. See `docs/06-development/agent-artifacts.md`.
+After successfully implementing an approved CR, always create `.agent-work/implementations/<cr-id>.md` (local, uncommitted). Explain in plain language for a newcomer: what changed and why; exact starting file/symbol; numbered reading flow from entry point to output (backend transport/application/domain/persistence or frontend route/component/API as relevant); one realistic example; relevant tests and commands; caveats. Use real paths and avoid unexplained jargon. Keep it brief, not a code dump or change log. Do not fabricate a walkthrough if implementation did not occur. See `AGENTS.md`.

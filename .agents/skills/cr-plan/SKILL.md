@@ -21,8 +21,8 @@ Lead with recommended scope and approach. Include evidence of current behavior, 
 
 ## Optional code intelligence
 
-Follow `docs/06-development/code-intelligence.md`; GitNexus and Serena are optional. Verify graph results against source, use direct source inspection when unavailable, and do not install or index automatically.
+Follow `tooling/code-intelligence.md`; GitNexus and Serena are optional. Verify graph results against source, use direct source inspection when unavailable, and do not install or index automatically.
 
 ## Plan artifact
 
-For nontrivial CRs, write a concise Markdown plan to `.agent-work/plans/<cr-id>.md` containing scope, evidence, ordered steps, tests, risks and open questions. This is a local, uncommitted artifact; do not change application source. For small questions, answer inline. See `docs/06-development/agent-artifacts.md`.
+For nontrivial CRs, write a concise Markdown plan to `.agent-work/plans/<cr-id>.md` containing scope, evidence, ordered steps, tests, risks and open questions. This is a local, uncommitted artifact; do not change application source. For small questions, answer inline. See `AGENTS.md`.
