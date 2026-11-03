@@ -45,7 +45,7 @@ A workflow definition does not prove a successful run. Consult GitHub Actions fo
 
 - Business modules have not been migrated.
 - Storefront and BFF directories are placeholders.
-- `infra/compose/compose.yml` and `compose.local.yml` are empty; local Compose startup is not configured.
+- PostgreSQL and Redis are provisioned with Docker Compose; see [local infrastructure](../../infra/README.md). Application containers have not yet been added.
 - `contracts/` contains placeholders rather than published schemas.
 
-Agent workflow and optional code/design tooling are documented in [agent skills](agent-skills.md), [code intelligence](code-intelligence.md) and [documentation governance](documentation.md). Continue migration incrementally by issue/CR and PR, following [workflow](workflow.md).
+Follow [workflow](workflow.md) and [conventions](conventions.md). Agent instructions are in [AGENTS.md](../../AGENTS.md); optional GitNexus/Serena setup is in [tooling](../../tooling/code-intelligence.md).

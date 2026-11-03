@@ -5,7 +5,7 @@ description: Explore and explain an unfamiliar Ecommerce code path, module, symb
 
 # Explore the codebase
 
-Read root `AGENTS.md`, relevant application instructions and `docs/06-development/code-intelligence.md`.
+Read root `AGENTS.md`, relevant application instructions and `tooling/code-intelligence.md`.
 
 1. Clarify the entry point and question (request, symbol, feature, dependency or suspected impact); identify which repository/application is actually present.
 2. Use GitNexus graph tools when available and indexed to discover candidate definitions, callers, dependencies and impact. Check freshness before relying on the index.

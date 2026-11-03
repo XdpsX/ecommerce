@@ -2,7 +2,7 @@
 
 > **Status:** Proposed — for review, not yet approved.
 > **Milestone:** M1 — Single-Shop Backoffice  
-> **Source of truth:** [Product roadmap](./roadmap.md), [Architecture direction](../03-architecture/README.md), [Development workflow](../06-development/workflow.md).
+> **Source of truth:** [Product roadmap](../roadmap.md), [Architecture direction](../../03-architecture/README.md), [Development workflow](../../06-development/workflow.md).
 >
 > This document proposes delivery phases within M1. It does **not** assert that these capabilities have been implemented, that the target service topology is finalized, or that phase order is a committed schedule.
 
@@ -10,7 +10,7 @@
 
 Deliver the backend capabilities and an integrated **Backoffice that can operate one shop**. Each delivered capability should include the necessary business rules, APIs/contracts, authorization, tests, and usable admin UI. M1 is **not** complete merely because APIs or screens exist independently.
 
-The current monorepo contains Spring Boot skeletons for `ecommerce`, `identity`, `media`, and `notification`, a React Backoffice skeleton, and placeholders for Storefront, BFFs, contracts, and local Compose. The architecture direction is an Ecommerce **modular monolith** with separate Identity, Media, and Notification capabilities; BFFs are optional and require justification.
+The current monorepo contains Spring Boot skeletons for `ecommerce`, `identity`, `media`, and `notification`, a React Backoffice skeleton, and placeholders for Storefront, BFFs and contracts; PostgreSQL/Redis infrastructure is configured through Compose. The architecture direction is an Ecommerce **modular monolith** with separate Identity, Media, and Notification capabilities; Backoffice BFF/API Gateway is approved by [ADR-0001](../../03-architecture/adr/0001-backoffice-bff-as-api-gateway.md), but not implemented; Storefront BFF is deferred.
 
 ### Guiding principles
 
@@ -59,7 +59,7 @@ The phase sequence is a **proposed dependency order**, not a commitment that all
 - The foundational Media API can be exercised with authorization and error handling; resource-specific attachment rules may remain for P2/P3.
 - Service ownership and contracts used by P1 are documented; relevant tests and CI checks pass.
 
-**Open decisions:** identity/session model, authorization roles/claims, Media storage and lifecycle, service-to-service trust, database ownership, whether a BFF is warranted, and the precise Notification minimum.
+**Open decisions:** identity/session model, authorization roles/claims, Media storage and lifecycle, service-to-service trust, database ownership, Backoffice BFF integration details (ADR-0001 approved the decision), and the precise Notification minimum.
 
 ### P2 — Catalog Management
 
@@ -181,19 +181,14 @@ For every cross-service CR, identify **producer, consumer, contract, data owner,
 
 Existing legacy screen inventories and API handoff notes may inform acceptance criteria, but their API paths, constraints, providers, and screen counts are **not** automatically binding on the new monorepo.
 
-## 7. Proposed Git branch strategy
+## 7. Git branch strategy
 
-- **Milestone integration branch:** `milestone/m1-single-shop-backoffice` (proposed). Create it from the agreed integration base (normally `develop`) when M1 delivery begins.
-- **Phase branches:** use the `phase/N-<short-slug>` names in the overview table. Create each from the milestone integration branch when that phase is authorized; merge phase work back through reviewed PRs.
-- **CR branches:** create focused branches from the active phase branch, e.g. `feat/m1-p1-admin-auth` or `fix/m1-p3-sku-validation`. Each CR PR targets its phase branch.
-- **Promotion:** after phase acceptance, merge the phase branch into the milestone integration branch via PR; merge the milestone integration branch into `develop` when M1 is accepted. Avoid assuming that parallel phase branches can be merged without integration work.
-- **Alignment with repository workflow:** the [development workflow](../06-development/workflow.md) currently illustrates a milestone integration branch named `phase/m1-ecommerce-domain-renewal`. The convention here is a **proposal**, not an override of that document; agree on one branch hierarchy and update the workflow documentation if this strategy is adopted.
-- **No branches are created by this document.** Branch names and phase boundaries remain subject to approval.
+Follow the canonical [development workflow](../../06-development/workflow.md): create authorized phase integration branches from `develop`, target CR branches to their phase branch, and merge completed phases back into `develop` through reviewed PRs. Do not add a milestone integration branch by default. Branch names in the phase overview remain proposals, not existing branches.
 
 ## 8. Planning and tracking
 
 - **Milestone:** M1 tracks the outcome; this file records proposed phase boundaries, not live progress.
-- **Phase:** use GitHub Project fields/views for delivery stages, per [workflow](../06-development/workflow.md).
+- **Phase:** use GitHub Project fields/views for delivery stages, per [workflow](../../06-development/workflow.md).
 - **CR:** one GitHub issue normally represents one focused change, with acceptance criteria, dependencies, affected applications, and verification. Refine near-term CRs first.
 - **Decisions:** settle material architecture/domain choices before implementing dependent CRs; capture durable approved decisions in the appropriate docs/ADRs.
 - **Status:** GitHub Issues/Projects/PRs remain the source of truth for execution status; do not maintain duplicate progress checklists here.

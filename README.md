@@ -14,15 +14,27 @@ Ecommerce monorepo in the **platform foundation / bootstrap** stage. Application
 | `web/backoffice/` | React admin application | Frontend skeleton |
 | `web/storefront/` | Storefront | Placeholder |
 | `contracts/` | API and event contracts | Reserved directories |
-| `infra/compose/` | Local infrastructure configuration | Placeholder files; not a runnable stack |
+| `infra/compose/` | Local infrastructure configuration | PostgreSQL and Redis Compose configuration |
 | `.agents/skills/` | Agent workflows and optional UI tooling | Skills and references |
 | `docs/` | Durable project documentation | Development and architecture guides |
 
-Backend baseline: Java 25 and Spring Boot 4.1.1. Backoffice baseline: React, TypeScript, Vite and pnpm; consult each application's configuration for exact versions.
+Backend baseline: Java 25 and Spring Boot 4.1.x (see service POMs for exact versions). Backoffice baseline: React, TypeScript, Vite and pnpm; consult each application's configuration for exact versions.
 
 ## Getting started
 
 See [bootstrap and verification](docs/06-development/bootstrap.md) for application-specific commands. For the Windows multi-service Maven runner, see [tooling/scripts](tooling/scripts/README.md).
+
+## Local infrastructure
+
+From the repository root, copy `.env.example` to `.env` and replace the example passwords before starting:
+
+```bash
+cp .env.example .env
+docker compose --env-file .env -f infra/compose/compose.yml up -d
+docker compose --env-file .env -f infra/compose/compose.yml ps
+```
+
+The stack provisions PostgreSQL 18.6 and password-protected Redis 8.6.8. Both ports bind to loopback. For the future containerized application stack, use `docker compose --env-file .env -f infra/compose/compose.local.yml up -d` (which includes the base infrastructure). See [infrastructure operations](infra/README.md) for connection, security, and cleanup instructions.
 
 ## Documentation and workflow
 

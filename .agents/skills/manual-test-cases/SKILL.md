@@ -5,7 +5,7 @@ description: Generate practical, executable manual QA test cases in Markdown tab
 
 # Generate manual test cases
 
-Read root `AGENTS.md`, `docs/06-development/agent-artifacts.md` and `docs/qa/manual/README.md`. Inspect relevant requirements, API contracts, UI flows and source code; do not invent business rules.
+Read root `AGENTS.md`, `AGENTS.md` and `docs/09-quality/manual/README.md`. Inspect relevant requirements, API contracts, UI flows and source code; do not invent business rules.
 
 1. Identify feature, CR, actor, scope, assumptions and environment.
 2. Trace the relevant UI/API behavior and authorization boundaries; distinguish observed behavior from intended requirements.
@@ -16,6 +16,6 @@ Read root `AGENTS.md`, `docs/06-development/agent-artifacts.md` and `docs/qa/man
 
 ## Output and retention
 
-Default output: `.agent-work/test-cases/<feature>.md` (local, gitignored). If user explicitly requests a reviewed reusable test suite for the repository, write to `docs/qa/manual/<feature>.md` after confirming intended requirements; that file can be committed with approval. Do not commit or push without authorization.
+Default output: `.agent-work/test-cases/<feature>.md` (local, gitignored). If user explicitly requests a reviewed reusable test suite for the repository, write to `docs/09-quality/manual/<feature>.md` after confirming intended requirements; that file can be committed with approval. Do not commit or push without authorization.
 
 Report generated file path, scenario count, coverage categories and unresolved questions. This skill authors test specifications, not test execution results. Do not alter application source.

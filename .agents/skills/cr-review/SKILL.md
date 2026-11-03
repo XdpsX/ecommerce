@@ -19,8 +19,8 @@ Report findings first in severity order, each with file/line, impact, evidence a
 
 ## Optional code intelligence
 
-Follow `docs/06-development/code-intelligence.md`; GitNexus and Serena are optional. Verify graph results against source, use direct source inspection when unavailable, and do not install or index automatically.
+Follow `tooling/code-intelligence.md`; GitNexus and Serena are optional. Verify graph results against source, use direct source inspection when unavailable, and do not install or index automatically.
 
 ## Review artifact
 
-For a full CR review, write findings-first Markdown to `.agent-work/reviews/<cr-id>.md`, including severity, source locations, impact, evidence, fixes, verification and remaining risks. This is local and uncommitted. Do not modify application source. See `docs/06-development/agent-artifacts.md`.
+For a full CR review, write findings-first Markdown to `.agent-work/reviews/<cr-id>.md`, including severity, source locations, impact, evidence, fixes, verification and remaining risks. This is local and uncommitted. Do not modify application source. See `AGENTS.md`.

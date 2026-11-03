@@ -11,9 +11,9 @@ One issue normally represents one change request (CR). Small, low-risk bootstrap
 
 For cross-service work, name the producer, consumer, contract, data owner and rollout/compatibility considerations. Keep ephemeral plans in the issue or PR; write durable documentation only when useful beyond the CR.
 
-## Agent artifacts
+## Working artifacts
 
-See `agent-artifacts.md`. Nontrivial CR plans: `.agent-work/plans/<cr-id>.md`; full reviews: `.agent-work/reviews/<cr-id>.md`; implementation code-reading walkthroughs: `.agent-work/implementations/<cr-id>.md`; QA drafts: `.agent-work/test-cases/<feature>.md`. These are local and ignored. Only reviewed reusable manual test suites belong in `docs/qa/manual/` and are committed after approval.
+Follow [AGENTS.md](../../AGENTS.md) and the relevant skill for temporary output formats and paths under ignored `.agent-work/`. Only approved reusable QA suites belong in `docs/09-quality/manual/`.
 
 ## Planning and tracking
 
@@ -22,7 +22,7 @@ See `agent-artifacts.md`. Nontrivial CR plans: `.agent-work/plans/<cr-id>.md`; f
 - **Backlog:** GitHub Issues for proposed work. Keep distant work at capability level; refine the next few CRs with scope, acceptance criteria and dependencies.
 - **CR/task:** One issue normally maps to one focused implementation PR, targeting its phase integration branch. Implementation subtasks stay in the issue or plan unless independently deliverable.
 - **GitHub Projects:** Canonical live status and prioritization (Backlog → Ready → In Progress → In Review → Done). Issues define scope, PRs record implementation and verification, docs preserve durable decisions. Do not duplicate live status in Markdown.
-- **Roadmap:** [Product roadmap](../01-product/roadmap.md) describes milestone outcomes and sequence, not live issue progress. Phase plans, such as `../01-product/m1-phases.md`, document the intended breakdown within a milestone. Link milestone/Project views from the README when available.
+- **Roadmap:** [Product roadmap](../01-product/roadmap.md) describes milestone outcomes and sequence, not live issue progress. Phase plans, such as `../01-product/milestones/m1-phases.md`, document the intended breakdown within a milestone. Link milestone/Project views from the README when available.
 
 ## Branches and CI
 

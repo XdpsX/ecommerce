@@ -5,7 +5,7 @@ description: Make scoped, approved updates to durable Ecommerce documentation us
 
 # Documentation update
 
-Read `AGENTS.md`, `docs/06-development/workflow.md`, `docs/06-development/agent-artifacts.md`, and `docs/06-development/documentation.md`.
+Read `AGENTS.md`, `docs/06-development/workflow.md`, `AGENTS.md`, and `docs/06-development/conventions.md`.
 
 ## When to use
 
