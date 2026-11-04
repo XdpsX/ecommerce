@@ -2,6 +2,7 @@
 
 - [Bootstrap](bootstrap.md): prerequisites, application verification and current limitations.
 - [Engineering conventions](conventions.md): project-wide engineering, security, compatibility and documentation rules.
+- [Code organization](code-organization.md): backend and frontend structure defaults, dependency boundaries and flexibility for individual capabilities.
 - [Workflow](workflow.md): CR lifecycle, branch strategy, GitHub tracking and PR handoff.
 - [Testing](testing.md): unit, integration, component and E2E strategy.
 

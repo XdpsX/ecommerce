@@ -11,10 +11,15 @@ Canonical engineering rules for this monorepo. Agent-specific permissions and sk
 - Preserve observable behavior unless approved scope changes it; document migrations, compatibility and rollout requirements.
 - Avoid speculative infrastructure, dependencies, shared libraries and abstractions without demonstrated need.
 
+## Code organization
+
+Follow [code organization](code-organization.md) for backend and frontend feature organization, responsibility and dependency boundaries, and justified exceptions. Apply it to new code and scoped refactors; internal packages and folders may vary by capability.
+
 ## Security and contracts
 
 - Do not expose secrets, sensitive data or untrusted HTML. Check authentication and authorization at relevant boundaries.
 - Assess consumer compatibility before modifying HTTP APIs, events, shared schemas or configuration interfaces.
+- Follow the [HTTP error contract](../04-contracts/http-errors.md) for REST error responses and protocol-specific exceptions. Map application/domain exceptions centrally with `@RestControllerAdvice` in HTTP adapters; controllers should not repeat `try/catch` solely to choose an HTTP status. Local catches are appropriate for a concrete recovery or endpoint-specific behavior. Security-filter failures need entry points/access-denied handlers; advice does not replace them.
 
 ## Documentation
 
