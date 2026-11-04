@@ -1,0 +1,4 @@
+spring:
+  config:
+    # spring-boot:run uses services/identity as its default working directory.
+    import: "optional:file:../../.env[.properties]"
