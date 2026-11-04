@@ -1,3 +1,13 @@
 spring:
   application:
     name: ecommerce
+identity:
+  issuer: ${IDENTITY_ISSUER:http://localhost:9000}
+  jwk-set-uri: ${IDENTITY_JWK_SET_URI:http://localhost:9000/oauth2/jwks}
+  audience: ${IDENTITY_AUDIENCE:ecommerce-api}
+
+# MVC DEBUG/TRACE diagnostics can contain rejected values or request bodies.
+logging:
+  level:
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: INFO
+    org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor: INFO
