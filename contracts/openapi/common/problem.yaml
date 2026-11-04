@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info:
+  title: Common HTTP Problems
+  version: 1.0.0
+  description: Shared error schemas; this document defines no endpoints.
+paths: {}
+components:
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, detail, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: Stable problem type URI; urn:ecommerce:problem:<lowercase-hyphenated-code>.
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail:
+          type: string
+          description: Safe human-readable description; clients must not parse this text for behavior.
+        instance:
+          type: string
+          format: uri-reference
+          description: Request path without query parameters or fragment.
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]*$'
+          description: Stable machine-readable code; each API owns its business codes.
+        errors:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/FieldError' }
+      additionalProperties: true
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          required: [errors]
+          properties:
+            status: { const: 400 }
+            code: { const: VALIDATION_FAILED }
+    FieldError:
+      oneOf:
+        - $ref: '#/components/schemas/BodyFieldError'
+        - $ref: '#/components/schemas/ParameterError'
+    BodyFieldError:
+      type: object
+      required: [location, pointer, code, message]
+      properties:
+        location: { const: body }
+        pointer:
+          type: string
+          description: JSON Pointer into the body; empty string identifies the whole body.
+          examples: ['/username', '/items/0/quantity']
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]*$' }
+        message: { type: string }
+      additionalProperties: false
+    ParameterError:
+      type: object
+      required: [location, name, code, message]
+      properties:
+        location: { type: string, enum: [query, path, header] }
+        name: { type: string }
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]*$' }
+        message: { type: string }
+      additionalProperties: false
+  responses:
+    BadRequest:
+      description: Invalid input; VALIDATION_FAILED may include structured field errors.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unauthorized:
+      description: Missing or invalid bearer credentials (UNAUTHENTICATED).
+      headers:
+        WWW-Authenticate:
+          schema: { type: string }
+          description: Bearer authentication challenge.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: Insufficient permission (FORBIDDEN).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Resource not found; see the API-specific business code.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Business state or uniqueness conflict; see the API-specific business code.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    InternalError:
+      description: Unexpected server failure (INTERNAL_ERROR); diagnostic details are not exposed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }

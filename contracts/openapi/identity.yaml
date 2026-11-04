@@ -1,0 +1,179 @@
+openapi: 3.1.0
+info:
+  title: Identity Administrator API
+  version: 1.0.0
+  description: REST errors use application/problem+json; OAuth2/OIDC endpoints retain protocol-defined errors.
+externalDocs:
+  description: HTTP error policy
+  url: ../../docs/04-contracts/http-errors.md
+servers:
+  - url: /api/admin
+security:
+  - bearerAuth: []
+paths:
+  /administrators:
+    get:
+      operationId: listAdministrators
+      summary: List administrators
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '400':
+          $ref: 'common/problem.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: 'common/problem.yaml#/components/responses/InternalError'
+        '200': { description: Administrator page }
+        '401':
+          $ref: 'common/problem.yaml#/components/responses/Unauthorized'
+          description: Invalid or missing bearer token
+        '403':
+          $ref: 'common/problem.yaml#/components/responses/Forbidden'
+          description: Missing administrator:read permission
+    post:
+      operationId: createAdministrator
+      summary: Create an enabled administrator without role assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '500':
+          $ref: 'common/problem.yaml#/components/responses/InternalError'
+        '201': { description: Administrator created }
+        '400':
+          $ref: 'common/problem.yaml#/components/responses/BadRequest'
+          description: Invalid administrator data
+        '401':
+          $ref: 'common/problem.yaml#/components/responses/Unauthorized'
+          description: Invalid or missing bearer token
+        '403':
+          $ref: 'common/problem.yaml#/components/responses/Forbidden'
+          description: Missing administrator:write permission
+        '409':
+          $ref: 'common/problem.yaml#/components/responses/Conflict'
+          description: Username already exists
+  /administrators/{id}:
+    get:
+      operationId: getAdministrator
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '400':
+          $ref: 'common/problem.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: 'common/problem.yaml#/components/responses/InternalError'
+        '200': { description: Administrator detail }
+        '401':
+          $ref: 'common/problem.yaml#/components/responses/Unauthorized'
+          description: Invalid or missing bearer token
+        '403':
+          $ref: 'common/problem.yaml#/components/responses/Forbidden'
+          description: Missing administrator:read permission
+        '404':
+          $ref: 'common/problem.yaml#/components/responses/NotFound'
+          description: Administrator not found
+  /administrators/{id}/enabled:
+    put:
+      operationId: setAdministratorEnabled
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [enabled], properties: { enabled: { type: boolean } } }
+      responses:
+        '500':
+          $ref: 'common/problem.yaml#/components/responses/InternalError'
+        '404':
+          $ref: 'common/problem.yaml#/components/responses/NotFound'
+          description: Administrator not found (ADMINISTRATOR_NOT_FOUND)
+        '204': { description: Updated }
+        '400':
+          $ref: 'common/problem.yaml#/components/responses/BadRequest'
+          description: Invalid request
+        '401':
+          $ref: 'common/problem.yaml#/components/responses/Unauthorized'
+          description: Invalid or missing bearer token
+        '403':
+          $ref: 'common/problem.yaml#/components/responses/Forbidden'
+          description: Missing administrator:write permission
+        '409':
+          $ref: 'common/problem.yaml#/components/responses/Conflict'
+          description: Last privileged administrator invariant would be violated
+  /administrators/{id}/roles:
+    put:
+      operationId: replaceAdministratorRoles
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [roleCodes], properties: { roleCodes: { type: array, items: { type: string }, uniqueItems: true } } }
+      responses:
+        '500':
+          $ref: 'common/problem.yaml#/components/responses/InternalError'
+        '404':
+          $ref: 'common/problem.yaml#/components/responses/NotFound'
+          description: Administrator not found (ADMINISTRATOR_NOT_FOUND)
+        '204': { description: Replaced }
+        '400':
+          $ref: 'common/problem.yaml#/components/responses/BadRequest'
+          description: Invalid role code or request
+        '401':
+          $ref: 'common/problem.yaml#/components/responses/Unauthorized'
+          description: Invalid or missing bearer token
+        '403':
+          $ref: 'common/problem.yaml#/components/responses/Forbidden'
+          description: Missing entitlement:write permission
+        '409':
+          $ref: 'common/problem.yaml#/components/responses/Conflict'
+          description: Last privileged administrator invariant would be violated
+  /roles:
+    get:
+      operationId: listRoles
+      responses:
+        '400':
+          $ref: 'common/problem.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: 'common/problem.yaml#/components/responses/InternalError'
+        '200': { description: Role catalog }
+        '401':
+          $ref: 'common/problem.yaml#/components/responses/Unauthorized'
+          description: Invalid or missing bearer token
+        '403':
+          $ref: 'common/problem.yaml#/components/responses/Forbidden'
+          description: Missing entitlement:read permission
+  /permissions:
+    get:
+      operationId: listPermissions
+      responses:
+        '400':
+          $ref: 'common/problem.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: 'common/problem.yaml#/components/responses/InternalError'
+        '200': { description: Permission catalog }
+        '401':
+          $ref: 'common/problem.yaml#/components/responses/Unauthorized'
+          description: Invalid or missing bearer token
+        '403':
+          $ref: 'common/problem.yaml#/components/responses/Forbidden'
+          description: Missing entitlement:read permission
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

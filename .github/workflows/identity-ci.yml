@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - 'services/identity/**'
+      - 'contracts/openapi/identity.yaml'
+      - 'contracts/openapi/common/**'
       - '!services/identity/**/*.md'
       - '.github/workflows/identity-ci.yml'
   push:
     branches: ['develop', 'main', 'phase/**']
     paths:
       - 'services/identity/**'
+      - 'contracts/openapi/identity.yaml'
+      - 'contracts/openapi/common/**'
       - '!services/identity/**/*.md'
       - '.github/workflows/identity-ci.yml'
   workflow_dispatch:
@@ -45,6 +49,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: identity-test-reports
-          path: services/identity/target/surefire-reports/
+          path: |
+            services/identity/target/surefire-reports/
+            services/identity/target/failsafe-reports/
           if-no-files-found: ignore
           retention-days: 7

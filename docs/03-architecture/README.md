@@ -12,6 +12,10 @@ The target is an Ecommerce modular monolith with separate Identity, Notification
 
 [ADR-0001](adr/0001-backoffice-bff-as-api-gateway.md) approves Spring Cloud Gateway (WebFlux) as the Backoffice BFF, with OAuth2/OIDC confidential-client login and Redis-backed sessions. The BFF is **not implemented**. Other ownership, HTTP/event contracts, data boundaries and deployment decisions need further evidence.
 
+## Identity design
+
+[Identity Service — Admin Authentication and Authorization](identity-service.md) documents the approved design direction for Issue #11, including JWT claims, admin bootstrap and security data ownership. [ADR-0002](adr/0002-admin-authorization-rbac.md) records the RBAC-with-permissions decision and deferred ABAC evaluation. These designs are not yet implemented.
+
 ## Organization
 
 - [ADRs](adr/README.md): Architectural decisions, alternatives and consequences; accepted does not mean implemented.
