@@ -4,12 +4,18 @@ on:
   pull_request:
     paths:
       - 'services/ecommerce/**'
+      - 'services/identity/**'
+      - 'contracts/openapi/identity.yaml'
+      - 'contracts/openapi/common/**'
       - '!services/ecommerce/**/*.md'
       - '.github/workflows/ecommerce-ci.yml'
   push:
     branches: ['develop', 'main', 'phase/**']
     paths:
       - 'services/ecommerce/**'
+      - 'services/identity/**'
+      - 'contracts/openapi/identity.yaml'
+      - 'contracts/openapi/common/**'
       - '!services/ecommerce/**/*.md'
       - '.github/workflows/ecommerce-ci.yml'
   workflow_dispatch:
@@ -38,6 +44,11 @@ jobs:
           cache-dependency-path: services/ecommerce/pom.xml
       - name: Verify Maven Wrapper
         run: chmod +x ./mvnw
+      - name: Build Identity producer
+        working-directory: services/identity
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -B --no-transfer-progress -DskipTests package
       - name: Build and test (includes Spotless check)
         run: ./mvnw -B --no-transfer-progress verify
       - name: Upload test reports
@@ -45,6 +56,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ecommerce-test-reports
-          path: services/ecommerce/target/surefire-reports/
+          path: |
+            services/ecommerce/target/surefire-reports/
+            services/ecommerce/target/failsafe-reports/
           if-no-files-found: ignore
           retention-days: 7

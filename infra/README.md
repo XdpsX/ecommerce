@@ -32,6 +32,18 @@ Use only **one** `-f` file for either mode. Both use Compose project name `ecomm
 
 Both host ports bind to loopback. Containers on the backend network use service names rather than `localhost`.
 
+## Identity database
+
+Identity uses a separate database on the same local PostgreSQL server, owned by the existing `POSTGRES_USER` role. It does not need a separate login role. On a fresh PostgreSQL volume, Compose runs `init.sql` to create the database if missing. Existing volumes do not rerun initialization scripts, so run the mounted script manually when setting up an existing volume; if `identity` already exists but is owned by another role, also change its owner:
+
+```powershell
+docker compose --env-file .env -f infra/compose/compose.yml up -d postgres
+docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/10-init.sql'
+docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER DATABASE identity OWNER TO $POSTGRES_USER"'
+```
+
+Set `IDENTITY_DB_URL=jdbc:postgresql://localhost:5432/identity`, `IDENTITY_DB_USERNAME` to the same value as `POSTGRES_USER`, and `IDENTITY_DB_PASSWORD` to the same value as `POSTGRES_PASSWORD`. The example values are `ecommerce` for both username and password. When running from the repository root, the Identity `local` Spring profile imports root `.env`; Spring Boot otherwise does not load it automatically. Replace the local passwords and supply a valid local signing-key file before starting the authorization server. Never use these local values in a shared environment.
+
 ## Readiness and operations
 
 Use the base file below for dev; substitute `compose.local.yml` for local mode.

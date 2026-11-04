@@ -36,6 +36,18 @@ docker compose --env-file .env -f infra/compose/compose.yml ps
 
 The stack provisions PostgreSQL 18.6 and password-protected Redis 8.6.8. Both ports bind to loopback. For the future containerized application stack, use `docker compose --env-file .env -f infra/compose/compose.local.yml up -d` (which includes the base infrastructure). See [infrastructure operations](infra/README.md) for connection, security, and cleanup instructions.
 
+## Run Identity from the repository root
+
+The Identity `local` Spring profile imports the root `.env` as a properties file. Maven runs the app with `services/identity` as its default working directory, so the profile loads `../../.env`. From the repository root, run:
+
+```powershell
+.\services\identity\mvnw.cmd -f services\identity\pom.xml "-Dspring-boot.run.profiles=local" spring-boot:run
+```
+
+On Bash, use `./services/identity/mvnw -f services/identity/pom.xml -Dspring-boot.run.profiles=local spring-boot:run`. This does not require copying `.env` into `services/identity/`. Docker Compose still reads `.env` separately through `--env-file`.
+
+Start PostgreSQL first. A fresh Compose volume creates the Identity database owned by `POSTGRES_USER`; for an existing volume, run the bootstrap described in [Identity database setup](infra/README.md#identity-database). Set `IDENTITY_DB_USERNAME` and `IDENTITY_DB_PASSWORD` to the same values as `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env`. The example `IDENTITY_JWK_SET_PATH=../../secrets/identity/signing-keys.jwks` is relative to the Identity module working directory and resolves to the root `secrets/` directory; use a valid private RSA RS256 JWK set with key ID `identity-local-dev`. Keep the key local; the `secrets/` directory is ignored by Git. Change the callback URI variables only when configuring the actual BFF client. Stop the service with Ctrl+C.
+
 ## Documentation and workflow
 
 - [Documentation index](docs/README.md)
