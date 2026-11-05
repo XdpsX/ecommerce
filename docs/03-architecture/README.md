@@ -2,9 +2,9 @@
 
 ## Current repository state
 
-The monorepo has four independent Spring Boot application skeletons: `ecommerce`, `identity`, `notification` and `media`. `web/backoffice` is a React skeleton; `web/storefront` and both BFF directories are placeholders. Legacy business modules have not been migrated.
+The monorepo has four independent Spring Boot services: Ecommerce and Identity foundations plus a Media image-storage service; Notification remains a skeleton. `web/backoffice` is a React skeleton; `web/storefront` and both BFF directories are placeholders. Legacy business modules have not been migrated.
 
-`infra/compose/compose.yml` provisions PostgreSQL and Redis for IDE-based development. `compose.local.yml` includes the infrastructure and is reserved for future containerized application services. See [local infrastructure](../../infra/README.md). `contracts/openapi/` and `contracts/events/` are placeholders for future schemas.
+`infra/compose/compose.yml` provisions PostgreSQL and Redis for IDE-based development. `compose.local.yml` includes the infrastructure and is reserved for future containerized application services. See [local infrastructure](../../infra/README.md). OpenAPI specifications live in `contracts/openapi/`; events remain reserved for future schemas.
 
 ## Target direction (not implemented)
 
@@ -12,9 +12,17 @@ The target is an Ecommerce modular monolith with separate Identity, Notification
 
 [ADR-0001](adr/0001-backoffice-bff-as-api-gateway.md) approves Spring Cloud Gateway (WebFlux) as the Backoffice BFF, with OAuth2/OIDC confidential-client login and Redis-backed sessions. The BFF is **not implemented**. Other ownership, HTTP/event contracts, data boundaries and deployment decisions need further evidence.
 
+## Ecommerce package organization
+
+Ecommerce keeps its application entry point in `com.ecommerce.api` and its resource-server configuration, REST advice and Problem Details writer in `adapter.web`. Identity groups its admin capability and OAuth2 adapters under their owners. Media groups asset code under the `asset` feature, with service-wide HTTP/security adapters at the root. See the service READMEs and the [code organization convention](../06-development/code-organization.md) for the implemented structures and dependency rules.
+
 ## Identity design
 
-[Identity Service — Admin Authentication and Authorization](identity-service.md) documents the approved design direction for Issue #11, including JWT claims, admin bootstrap and security data ownership. [ADR-0002](adr/0002-admin-authorization-rbac.md) records the RBAC-with-permissions decision and deferred ABAC evaluation. These designs are not yet implemented.
+[Identity Service — Admin Authentication and Authorization](identity-service.md) documents the Issue #11 implementation, including JWT claims, admin bootstrap and security data ownership. [ADR-0002](adr/0002-admin-authorization-rbac.md) records the RBAC-with-permissions decision and deferred ABAC evaluation.
+
+## Media design
+
+[Media Service](media-service.md) documents the implemented private image-storage boundary, Identity-issued entitlements, authenticated provider assets, cleanup recovery and deferred consumer attachment rules. Asset code is grouped under its feature and service-wide HTTP/security adapters are at the root. The provider smoke checks still require an isolated Cloudinary account.
 
 ## Organization
 
