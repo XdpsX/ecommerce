@@ -1,4 +1,4 @@
-package com.ecommerce.api.error;
+package com.ecommerce.api.adapter.web;
 
 import java.util.List;
 import java.util.Map;
@@ -20,8 +20,8 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 @RestControllerAdvice
-public class ApiExceptionHandler {
-    private static final System.Logger LOGGER = System.getLogger(ApiExceptionHandler.class.getName());
+public class GlobalExceptionHandler {
+    private static final System.Logger LOGGER = System.getLogger(GlobalExceptionHandler.class.getName());
 
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<Object> forbidden(AccessDeniedException exception, WebRequest request) {

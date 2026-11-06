@@ -1,4 +1,4 @@
-package com.ecommerce.api.security;
+package com.ecommerce.api.adapter.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,7 +45,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-import com.ecommerce.api.security.support.SecurityProbeConfiguration;
+import com.ecommerce.api.adapter.web.support.SecurityProbeConfiguration;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;

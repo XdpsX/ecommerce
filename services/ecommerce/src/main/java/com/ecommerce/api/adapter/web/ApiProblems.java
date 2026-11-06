@@ -1,4 +1,4 @@
-package com.ecommerce.api.error;
+package com.ecommerce.api.adapter.web;
 
 import java.net.URI;
 import java.util.Locale;

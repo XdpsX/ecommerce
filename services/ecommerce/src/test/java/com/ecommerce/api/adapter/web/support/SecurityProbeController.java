@@ -1,4 +1,4 @@
-package com.ecommerce.api.security.support;
+package com.ecommerce.api.adapter.web.support;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;

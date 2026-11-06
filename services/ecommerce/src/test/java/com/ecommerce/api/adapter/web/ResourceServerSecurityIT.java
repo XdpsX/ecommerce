@@ -1,4 +1,4 @@
-package com.ecommerce.api.security;
+package com.ecommerce.api.adapter.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -29,7 +29,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.ecommerce.api.security.support.SecurityProbeConfiguration;
+import com.ecommerce.api.adapter.web.support.SecurityProbeConfiguration;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;

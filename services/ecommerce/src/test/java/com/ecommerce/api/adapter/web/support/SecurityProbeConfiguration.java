@@ -1,4 +1,4 @@
-package com.ecommerce.api.security.support;
+package com.ecommerce.api.adapter.web.support;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
