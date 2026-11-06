@@ -63,6 +63,7 @@ class IdentityEcommerceFlowIT {
     private static final String PASSWORD = "Cross-service-password-123!";
     private static final String VERIFIER = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG";
     private static PostgreSQLContainer postgres;
+    private static PostgreSQLContainer ecommercePostgres;
     private static Process identity;
     private static Path keyFile;
     private static String issuer;
@@ -78,6 +79,9 @@ class IdentityEcommerceFlowIT {
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
         startFixture();
+        registry.add("spring.datasource.url", ecommercePostgres::getJdbcUrl);
+        registry.add("spring.datasource.username", ecommercePostgres::getUsername);
+        registry.add("spring.datasource.password", ecommercePostgres::getPassword);
         registry.add("identity.issuer", () -> issuer);
         registry.add("identity.jwk-set-uri", () -> issuer + "/oauth2/jwks");
         registry.add("identity.audience", () -> "ecommerce-api");
@@ -93,6 +97,9 @@ class IdentityEcommerceFlowIT {
         }
         if (postgres != null) {
             postgres.stop();
+        }
+        if (ecommercePostgres != null) {
+            ecommercePostgres.stop();
         }
         if (keyFile != null) {
             Files.deleteIfExists(keyFile);
@@ -193,6 +200,8 @@ class IdentityEcommerceFlowIT {
         try {
             postgres = new PostgreSQLContainer("postgres:18.6");
             postgres.start();
+            ecommercePostgres = new PostgreSQLContainer("postgres:18.6");
+            ecommercePostgres.start();
             jdbcUrl = postgres.getJdbcUrl();
             dbUsername = postgres.getUsername();
             dbPassword = postgres.getPassword();
@@ -237,6 +246,10 @@ class IdentityEcommerceFlowIT {
             if (postgres != null) {
                 postgres.stop();
                 postgres = null;
+            }
+            if (ecommercePostgres != null) {
+                ecommercePostgres.stop();
+                ecommercePostgres = null;
             }
             if (keyFile != null) {
                 try {
