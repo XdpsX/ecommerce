@@ -2,6 +2,7 @@ package com.ecommerce.media.adapter.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -16,6 +17,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.ecommerce.media.asset.application.exception.DirectUploadException;
 import com.ecommerce.media.asset.application.exception.MediaException;
 
 @RestControllerAdvice
@@ -34,6 +36,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ApiProblems.create(
                         status(exception.kind()), exception.code(), exception.getMessage(), request.getRequestURI()),
                 new HttpHeaders());
+    }
+
+    @ExceptionHandler(DirectUploadException.class)
+    ResponseEntity<Object> directUpload(DirectUploadException exception, HttpServletRequest request) {
+        HttpStatus status = status(exception.kind());
+        HttpHeaders headers = new HttpHeaders();
+        if (exception.retryAfterSeconds() > 0) {
+            headers.set(HttpHeaders.RETRY_AFTER, Long.toString(exception.retryAfterSeconds()));
+        }
+        return response(ApiProblems.create(status, exception.code(), detail(status), request.getRequestURI()), headers);
     }
 
     @Override
@@ -55,6 +67,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         HttpStatus.BAD_REQUEST,
                         "INVALID_REQUEST",
                         "The multipart form is invalid.",
+                        request.getRequestURI()),
+                new HttpHeaders());
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    ResponseEntity<Object> database(DataAccessException exception, HttpServletRequest request) {
+        return response(
+                ApiProblems.create(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "MEDIA_PROVIDER_UNAVAILABLE",
+                        "Media persistence is temporarily unavailable.",
                         request.getRequestURI()),
                 new HttpHeaders());
     }
@@ -85,6 +108,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case STATE_CONFLICT -> HttpStatus.CONFLICT;
             case STORAGE_UNAVAILABLE, PROCESSING_BUSY -> HttpStatus.SERVICE_UNAVAILABLE;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
+        };
+    }
+
+    private static HttpStatus status(DirectUploadException.Kind kind) {
+        return switch (kind) {
+            case BAD_REQUEST -> HttpStatus.BAD_REQUEST;
+            case QUOTA_EXCEEDED -> HttpStatus.TOO_MANY_REQUESTS;
+            case DISABLED, PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
         };
     }
 

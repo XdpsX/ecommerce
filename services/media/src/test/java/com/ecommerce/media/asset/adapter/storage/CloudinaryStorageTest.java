@@ -34,6 +34,7 @@ class CloudinaryStorageTest {
     private volatile String uploadPublicId = "media/item-1";
     private volatile String deleteResult = "ok";
     private CloudinaryStorage storage;
+    private MediaProperties properties;
 
     @BeforeEach
     void startServer() throws IOException {
@@ -66,11 +67,13 @@ class CloudinaryStorageTest {
         });
         server.start();
 
-        MediaProperties properties = new MediaProperties();
+        properties = new MediaProperties();
         properties.getStorage().getCloudinary().setCloudName("test-cloud");
         properties.getStorage().getCloudinary().setApiKey("test-key");
         properties.getStorage().getCloudinary().setApiSecret("test-secret");
         properties.getStorage().getCloudinary().setFolder("media");
+        properties.getDirectUpload().setEnabled(false);
+        properties.getDirectUpload().setProviderCallsPerHour(1);
         properties.setProviderTimeout(Duration.ofSeconds(2));
         Cloudinary cloudinary = new Cloudinary(Map.of(
                 "cloud_name", "test-cloud",
@@ -124,6 +127,16 @@ class CloudinaryStorageTest {
 
         deleteResult = "not found";
         assertThat(storage.delete("media/item-1")).isEqualTo(DeleteResult.NOT_FOUND);
+    }
+
+    @Test
+    void multipartProviderCallsIgnoreTheDirectUploadBudgetWhenDirectUploadIsDisabled() {
+        assertThat(properties.getDirectUpload().getProviderCallsPerHour()).isEqualTo(1);
+        assertThat(properties.getDirectUpload().isEnabled()).isFalse();
+
+        assertThat(storage.inspect("media/item-1").assetId()).isEqualTo("asset-123");
+        assertThat(storage.delete("media/item-1")).isEqualTo(DeleteResult.DELETED);
+        assertThat(storage.delete("media/item-1")).isEqualTo(DeleteResult.DELETED);
     }
 
     @Test

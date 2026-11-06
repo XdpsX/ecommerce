@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -59,6 +60,17 @@ public class MediaSecurityConfiguration {
     }
 
     @Bean
+    @Order(1)
+    SecurityFilterChain cloudinaryNotificationChain(HttpSecurity http) throws Exception {
+        return http.securityMatcher("/api/media/cloudinary/notifications")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+                .build();
+    }
+
+    @Bean
+    @Order(2)
     SecurityFilterChain mediaSecurityFilterChain(HttpSecurity http, MediaProperties media, ApiProblems problems)
             throws Exception {
         AuthenticationEntryPoint entryPoint = (request, response, exception) -> problems.writeSecurity(
@@ -74,6 +86,12 @@ public class MediaSecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/admin/media")
+                        .access(permission("media:upload"))
+                        .requestMatchers(HttpMethod.POST, "/api/admin/media/upload-intents")
+                        .access(permission("media:upload"))
+                        .requestMatchers(HttpMethod.POST, "/api/admin/media/upload-intents/complete")
+                        .access(permission("media:upload"))
+                        .requestMatchers(HttpMethod.POST, "/api/admin/media/upload-intents/status")
                         .access(permission("media:upload"))
                         .requestMatchers(HttpMethod.POST, "/api/admin/media/*/download-link")
                         .access(permission("media:read"))

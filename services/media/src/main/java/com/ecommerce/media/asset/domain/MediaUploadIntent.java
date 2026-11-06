@@ -1,0 +1,41 @@
+package com.ecommerce.media.asset.domain;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record MediaUploadIntent(
+        UUID id,
+        UUID ownerId,
+        String clientFileId,
+        String filename,
+        String declaredContentType,
+        long declaredSizeBytes,
+        String policyVersion,
+        String providerPublicId,
+        UploadIntentState state,
+        Instant createdAt,
+        Instant signedAt,
+        Instant expiresAt,
+        UUID mediaId,
+        Long sourceBytes,
+        Integer sourceWidth,
+        Integer sourceHeight,
+        String sourceFormat,
+        String sourceEvidence,
+        String providerAssetId,
+        Long finalBytes,
+        Integer finalWidth,
+        Integer finalHeight,
+        String finalFormat,
+        String finalResourceType,
+        String finalDeliveryType,
+        String resultStatus,
+        String errorCode,
+        int retryCount,
+        Instant nextAttemptAt,
+        Instant discoveryDueAt,
+        String discoveryCursor,
+        String discoveryResourceType,
+        UUID leaseToken,
+        Instant leaseUntil,
+        long version) {}

@@ -38,3 +38,34 @@ media:
     batch-size: ${MEDIA_CLEANUP_BATCH_SIZE:10}
     lease-duration: ${MEDIA_CLEANUP_LEASE:PT2M}
     retry-cap: ${MEDIA_CLEANUP_RETRY_CAP:PT1H}
+  direct-upload:
+    enabled: ${MEDIA_DIRECT_UPLOAD_ENABLED:false}
+    issuance-enabled: ${MEDIA_DIRECT_UPLOAD_ISSUANCE_ENABLED:true}
+    webhook-enabled: ${MEDIA_DIRECT_UPLOAD_WEBHOOK_ENABLED:false}
+    notification-url: ${CLOUDINARY_NOTIFICATION_URL:}
+    notification-api-key: ${CLOUDINARY_NOTIFICATION_KEY:}
+    batch-size: ${MEDIA_DIRECT_UPLOAD_BATCH_SIZE:10}
+    max-file-bytes: ${MEDIA_DIRECT_UPLOAD_MAX_FILE_BYTES:5242880}
+    max-batch-bytes: ${MEDIA_DIRECT_UPLOAD_MAX_BATCH_BYTES:52428800}
+    per-principal-daily-intents: ${MEDIA_DIRECT_UPLOAD_ADMIN_DAILY_LIMIT:100}
+    global-daily-intents: ${MEDIA_DIRECT_UPLOAD_GLOBAL_DAILY_LIMIT:1000}
+    per-principal-active-intents: ${MEDIA_DIRECT_UPLOAD_ADMIN_ACTIVE_LIMIT:20}
+    global-active-intents: ${MEDIA_DIRECT_UPLOAD_GLOBAL_ACTIVE_LIMIT:200}
+    process-concurrency: ${MEDIA_DIRECT_UPLOAD_CONCURRENCY:3}
+    inspection-timeout: ${MEDIA_DIRECT_UPLOAD_INSPECTION_TIMEOUT:PT3S}
+    batch-deadline: ${MEDIA_DIRECT_UPLOAD_BATCH_DEADLINE:PT10S}
+    intent-ttl: ${MEDIA_DIRECT_UPLOAD_INTENT_TTL:PT15M}
+    provider-calls-per-hour: ${MEDIA_DIRECT_UPLOAD_PROVIDER_CALLS_PER_HOUR:120}
+    reserved-recovery-calls-per-hour: ${MEDIA_DIRECT_UPLOAD_RECOVERY_CALL_RESERVE:30}
+    discovery-pages-per-claim: ${MEDIA_DIRECT_UPLOAD_DISCOVERY_PAGES:3}
+    discovery-page-size: ${MEDIA_DIRECT_UPLOAD_DISCOVERY_PAGE_SIZE:100}
+    deletes-per-claim: ${MEDIA_DIRECT_UPLOAD_DELETES_PER_CLAIM:10}
+    reconcile-batch-size: ${MEDIA_DIRECT_UPLOAD_RECONCILE_BATCH_SIZE:10}
+    reconcile-interval: ${MEDIA_DIRECT_UPLOAD_RECONCILE_INTERVAL:PT1M}
+    lease-duration: ${MEDIA_DIRECT_UPLOAD_LEASE:PT2M}
+    retry-cap: ${MEDIA_DIRECT_UPLOAD_RETRY_CAP:PT1H}
+    issuance-stop-backlog: ${MEDIA_DIRECT_UPLOAD_STOP_BACKLOG:200}
+    issuance-stop-oldest-recovery: ${MEDIA_DIRECT_UPLOAD_STOP_OLDEST_RECOVERY:PT24H}
+    max-notification-bytes: ${MEDIA_DIRECT_UPLOAD_MAX_NOTIFICATION_BYTES:65536}
+    notification-max-age: ${MEDIA_DIRECT_UPLOAD_NOTIFICATION_MAX_AGE:PT5M}
+    notification-future-skew: ${MEDIA_DIRECT_UPLOAD_NOTIFICATION_FUTURE_SKEW:PT30S}
