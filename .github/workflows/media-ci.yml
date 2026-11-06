@@ -4,12 +4,18 @@ on:
   pull_request:
     paths:
       - 'services/media/**'
+      - 'services/identity/**'
+      - 'contracts/openapi/common/**'
+      - 'contracts/openapi/media.yaml'
       - '!services/media/**/*.md'
       - '.github/workflows/media-ci.yml'
   push:
     branches: ['develop', 'main', 'phase/**']
     paths:
       - 'services/media/**'
+      - 'services/identity/**'
+      - 'contracts/openapi/common/**'
+      - 'contracts/openapi/media.yaml'
       - '!services/media/**/*.md'
       - '.github/workflows/media-ci.yml'
   workflow_dispatch:
@@ -38,6 +44,11 @@ jobs:
           cache-dependency-path: services/media/pom.xml
       - name: Verify Maven Wrapper
         run: chmod +x ./mvnw
+      - name: Build Identity producer
+        working-directory: services/identity
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -B --no-transfer-progress -DskipTests package
       - name: Build and test (includes Spotless check)
         run: ./mvnw -B --no-transfer-progress verify
       - name: Upload test reports
@@ -45,6 +56,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: media-test-reports
-          path: services/media/target/surefire-reports/
+          path: |
+            services/media/target/surefire-reports/
+            services/media/target/failsafe-reports/
           if-no-files-found: ignore
           retention-days: 7

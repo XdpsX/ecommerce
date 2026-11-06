@@ -1,0 +1,375 @@
+openapi: 3.1.0
+info:
+  title: Media Service API
+  version: 1.0.0
+  description: Private administrator image storage. READY assets remain until explicitly deleted; there is no public catalog delivery or attachment API.
+externalDocs:
+  description: Media service ownership and lifecycle
+  url: ../../docs/03-architecture/media-service.md
+servers:
+  - url: /api/admin
+paths:
+  /media:
+    post:
+      operationId: uploadMedia
+      summary: Upload one sanitized JPEG or PNG image
+      security:
+        - mediaOAuth: [media.api]
+      description: The token must include media:upload. Server validates and re-encodes the image before storing it as an authenticated provider asset. A successful response means the provider identity was inspected and metadata is READY.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG or PNG, at most 5 MiB, 20 megapixels and 10,000 pixels per side.
+      responses:
+        '201':
+          description: Image stored and verified
+          headers:
+            Location: { schema: { type: string, format: uri-reference } }
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MediaAsset' }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/components/responses/InvalidImage' }
+        '503': { $ref: '#/components/responses/StorageUnavailable' }
+  /media/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: getMediaMetadata
+      summary: Read media metadata
+      security:
+        - mediaOAuth: [media.api]
+      description: The token must include media:read.
+      responses:
+        '200':
+          description: Metadata without provider identifiers or permanent delivery URLs
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MediaAsset' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+    delete:
+      operationId: deleteMedia
+      summary: Request asynchronous deletion
+      security:
+        - mediaOAuth: [media.api]
+      description: The token must include media:delete. Persists the delete intent before returning. Repeating DELETE for a known pending or deleted asset is idempotent; an unknown UUID is 404. Provider errors remain visible to the cleanup worker and do not undo the accepted request.
+      responses:
+        '202':
+          description: Delete intent accepted
+          headers:
+            Location: { schema: { type: string, format: uri-reference } }
+            Cache-Control: { schema: { type: string, const: no-store } }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '409': { $ref: 'common/problem.yaml#/components/responses/Conflict' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+  /media/{id}/download-link:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: createMediaDownloadLink
+      summary: Create a short-lived original image link
+      security:
+        - mediaOAuth: [media.api]
+      description: The token must include media:read. The signed URL is a bearer capability. Do not persist or log it. A successful response is no-store. It expires after the configured TTL and cannot be revoked after issuance.
+      responses:
+        '200':
+          description: Expiring original image download link
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DownloadLink' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '409': { $ref: 'common/problem.yaml#/components/responses/Conflict' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '503': { $ref: '#/components/responses/StorageUnavailable' }
+  /media/upload-intents:
+    post:
+      operationId: createMediaUploadIntents
+      summary: Create a batch of direct-upload instructions
+      security:
+        - mediaOAuth: [media.api]
+      description: Requires media:upload. The complete request is validated and persisted atomically before signed Cloudinary fields are returned. Provider authorization is reusable until expiry and does not guarantee single use.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUploadIntentBatch' }
+      responses:
+        '201':
+          description: Signed instructions created in request order
+          headers:
+            Location: { schema: { type: string, format: uri-reference } }
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreateUploadIntentBatchResult' }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '429': { $ref: '#/components/responses/QuotaExceeded' }
+        '503': { $ref: '#/components/responses/DirectUploadUnavailable' }
+  /media/upload-intents/complete:
+    post:
+      operationId: completeMediaUploadIntents
+      summary: Independently verify and complete upload intents
+      security:
+        - mediaOAuth: [media.api]
+      description: Requires media:upload and creator ownership. Each item commits independently. Browser response fields are ignored; only trusted provider evidence can produce READY.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UploadIntentIds' }
+      responses:
+        '200':
+          description: Ordered per-intent outcomes; partial success is allowed
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadIntentBatchResult' }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '503': { $ref: '#/components/responses/DirectUploadUnavailable' }
+  /media/upload-intents/status:
+    post:
+      operationId: getMediaUploadIntentStatuses
+      summary: Read current status for upload intents
+      security:
+        - mediaOAuth: [media.api]
+      description: Requires media:upload and creator ownership. Reads durable state and current Media asset availability without calling Cloudinary.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UploadIntentIds' }
+      responses:
+        '200':
+          description: Ordered per-intent outcomes
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadIntentBatchResult' }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '503': { $ref: '#/components/responses/DirectUploadUnavailable' }
+  /media/cloudinary/notifications:
+    servers:
+      - url: /api
+    post:
+      operationId: receiveCloudinaryNotification
+      summary: Schedule verification for a Cloudinary upload notification
+      description: Authenticates the original request body using Cloudinary notification signature headers. It never establishes READY. Authenticated unknown, duplicate and terminal events are acknowledged without side effects.
+      parameters:
+        - name: X-Cld-Timestamp
+          in: header
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: X-Cld-Signature
+          in: header
+          required: true
+          schema: { type: string, minLength: 64, maxLength: 64, pattern: '^[a-fA-F0-9]{64}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true, maxProperties: 32 }
+      responses:
+        '204': { description: Notification durably scheduled or harmlessly ignored }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '503': { $ref: '#/components/responses/StorageUnavailable' }
+components:
+  securitySchemes:
+    mediaOAuth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: http://localhost:9000/oauth2/authorize
+          tokenUrl: http://localhost:9000/oauth2/token
+          scopes:
+            media.api: Receive tokens with the Media API audience; endpoint permissions are separately checked from token claims.
+  schemas:
+    MediaAsset:
+      type: object
+      required: [id, status, mediaType, byteSize, width, height, uploadedBy, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, const: READY }
+        mediaType: { type: string, enum: [image/jpeg, image/png] }
+        byteSize: { type: integer, minimum: 1, maximum: 4194304 }
+        width: { type: integer, minimum: 1, maximum: 10000 }
+        height: { type: integer, minimum: 1, maximum: 10000 }
+        uploadedBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        uploadedAt: { type: string, format: date-time }
+      additionalProperties: false
+    DownloadLink:
+      type: object
+      required: [url, expiresAt]
+      properties:
+        url: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+      additionalProperties: false
+    CreateUploadIntentBatch:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: '#/components/schemas/UploadIntentDeclaration' }
+      additionalProperties: false
+    UploadIntentDeclaration:
+      type: object
+      required: [clientFileId, filename, contentType, sizeBytes]
+      properties:
+        clientFileId: { type: string, minLength: 1, maxLength: 64 }
+        filename: { type: string, minLength: 1, maxLength: 255 }
+        contentType: { type: string, enum: [image/jpeg, image/png] }
+        sizeBytes: { type: integer, minimum: 1, maximum: 5242880 }
+      additionalProperties: false
+    CreateUploadIntentBatchResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: '#/components/schemas/UploadIntentInstruction' }
+      additionalProperties: false
+    UploadIntentInstruction:
+      type: object
+      required: [clientFileId, intentId, uploadUrl, fields, expiresAt]
+      properties:
+        clientFileId: { type: string }
+        intentId: { type: string, format: uuid }
+        uploadUrl: { type: string, format: uri, pattern: '^https://' }
+        fields:
+          type: object
+          additionalProperties: { type: string }
+        expiresAt: { type: string, format: date-time }
+      additionalProperties: false
+    UploadIntentIds:
+      type: object
+      required: [intentIds]
+      properties:
+        intentIds:
+          type: array
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
+          items: { type: string, format: uuid }
+      additionalProperties: false
+    UploadIntentBatchResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: '#/components/schemas/UploadIntentResult' }
+      additionalProperties: false
+    UploadIntentResult:
+      type: object
+      required: [intentId, status]
+      properties:
+        intentId: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, READY, REJECTED, EXPIRED, DELETED, UNAVAILABLE, NOT_FOUND] }
+        mediaId: { type: string, format: uuid }
+        errorCode: { type: string, enum: [RETRYABLE, INPUT_POLICY_REJECTED, OUTPUT_LIMIT_EXCEEDED, PROVIDER_IDENTITY_MISMATCH, UNSUPPORTED_INPUT] }
+      additionalProperties: false
+  responses:
+    MethodNotAllowed:
+      description: The HTTP method is not allowed for this resource (METHOD_NOT_ALLOWED).
+      headers:
+        Allow:
+          schema: { type: string }
+          description: Supported methods for this resource.
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    NotAcceptable:
+      description: No supported response representation matches the Accept header (NOT_ACCEPTABLE).
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    PayloadTooLarge:
+      description: Input bytes or canonical output exceed the configured limit (FILE_TOO_LARGE).
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    UnsupportedMediaType:
+      description: Content signature is not JPEG or PNG (UNSUPPORTED_MEDIA_TYPE).
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    InvalidImage:
+      description: Image decode, dimensions or canonicalization failed (INVALID_MEDIA_IMAGE).
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    StorageUnavailable:
+      description: Storage failed or returned an unverified result (MEDIA_PROVIDER_UNAVAILABLE).
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    QuotaExceeded:
+      description: An issuance or admission quota is exhausted (UPLOAD_QUOTA_EXCEEDED); includes Retry-After.
+      headers:
+        Retry-After: { schema: { type: integer, minimum: 1 } }
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    DirectUploadUnavailable:
+      description: Direct issuance is disabled or required direct-upload infrastructure is unavailable.
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }

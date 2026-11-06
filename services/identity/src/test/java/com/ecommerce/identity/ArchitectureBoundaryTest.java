@@ -17,10 +17,14 @@ class ArchitectureBoundaryTest {
                     paths.filter(file -> file.toString().endsWith(".java")).toList()) {
                 String source = Files.readString(path);
                 String relative = sourceRoot.relativize(path).toString().replace('\\', '/');
-                if (relative.contains("/domain/")) {
+                if (relative.startsWith("domain/") || relative.contains("/domain/")) {
                     assertThat(source)
                             .as(relative)
-                            .doesNotContain("org.springframework", ".application.", ".infrastructure.", ".api.");
+                            .doesNotContain(
+                                    "org.springframework", ".application.", ".infrastructure.", ".api.", ".adapter.");
+                }
+                if (relative.startsWith("adapter/web/")) {
+                    assertThat(source).as(relative).doesNotContain("org.springframework.jdbc", ".adapter.persistence.");
                 }
                 if (relative.startsWith("admin/application/")) {
                     assertThat(source)
@@ -30,16 +34,15 @@ class ArchitectureBoundaryTest {
                                     "org.springframework.web",
                                     "org.springframework.http",
                                     "com.ecommerce.identity.authorization",
-                                    ".infrastructure.",
-                                    ".api.");
+                                    ".adapter.");
                 }
                 if (relative.startsWith("authorization/")) {
                     assertThat(source)
                             .as(relative)
                             .doesNotContain(
-                                    "com.ecommerce.identity.admin.infrastructure",
-                                    "com.ecommerce.identity.admin.application.AdministratorRepository",
-                                    "com.ecommerce.identity.admin.application.BootstrapAdministratorStore");
+                                    "com.ecommerce.identity.admin.adapter.persistence",
+                                    "com.ecommerce.identity.admin.application.port.AdministratorRepository",
+                                    "com.ecommerce.identity.admin.application.port.BootstrapAdministratorStore");
                     assertThat(Pattern.compile(
                                             "(?i)\\b(?:FROM|JOIN|UPDATE|INTO)\\s+(?:administrators|administrator_roles|administrator_audit|identity_security_state)\\b")
                                     .matcher(source)
@@ -47,8 +50,8 @@ class ArchitectureBoundaryTest {
                             .as("%s must access admin-owned tables through AdministratorDirectory", relative)
                             .isFalse();
                 }
-                if (relative.contains("/api/")) {
-                    assertThat(source).as(relative).doesNotContain(".infrastructure.", "org.springframework.jdbc");
+                if (relative.startsWith("admin/adapter/web/") || relative.startsWith("admin/adapter/cli/")) {
+                    assertThat(source).as(relative).doesNotContain(".adapter.persistence.", "org.springframework.jdbc");
                 }
                 assertThat(source)
                         .as(relative)

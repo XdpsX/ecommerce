@@ -20,6 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
@@ -141,11 +147,61 @@ class OperatorCommandsIT {
 
     @Test
     void commandsWithoutTerminalFailAndExitRatherThanStartingHttp() throws Exception {
-        for (String name : new String[] {"bootstrap-admin", "register-client"}) {
+        for (String name : new String[] {"bootstrap-admin", "register-client", "add-media-scope"}) {
             try (Command command = new Command(name, false)) {
                 command.assertExit(1, "requires an interactive terminal console");
             }
         }
+    }
+
+    @Test
+    void addMediaScopePromptsDeclinesAndAuditsConfirmedChange() throws Exception {
+        String clientId = "media-scope-smoke";
+        RegisteredClient client = RegisteredClient.withId(
+                        java.util.UUID.randomUUID().toString())
+                .clientId(clientId)
+                .clientSecret("{noop}media-scope-smoke-secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("https://client.example.test/callback")
+                .scope("openid")
+                .clientSettings(ClientSettings.builder().requireProofKey(true).build())
+                .tokenSettings(TokenSettings.builder().reuseRefreshTokens(false).build())
+                .build();
+        new JdbcRegisteredClientRepository(jdbc).save(client);
+
+        try (Command command = new Command("add-media-scope", true, "--client-id=" + clientId)) {
+            command.answer("Add media.api to client '" + clientId + "'? [y/N] ", "n");
+            command.assertExit(0, "No changes made.");
+        }
+        assertThat(jdbc.queryForObject(
+                        "SELECT scopes FROM oauth2_registered_client WHERE client_id = ?", String.class, clientId))
+                .isEqualTo("openid");
+
+        try (Command command = new Command("add-media-scope", true, "--client-id=" + clientId)) {
+            command.answer("Add media.api to client '" + clientId + "'? [y/N] ", "y");
+            command.assertExit(0, "Media scope added; existing grants are unchanged.");
+        }
+        assertThat(jdbc.queryForObject(
+                        "SELECT scopes FROM oauth2_registered_client WHERE client_id = ?", String.class, clientId))
+                .isEqualTo("media.api,openid");
+        assertThat(jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM administrator_audit WHERE target_client_id = ? "
+                                + "AND action = 'MEDIA_SCOPE_ADDED_TO_CLIENT' AND outcome = 'APPLIED'",
+                        Integer.class,
+                        clientId))
+                .isEqualTo(1);
+
+        try (Command command = new Command("add-media-scope", true, "--client-id=" + clientId)) {
+            command.answer("Add media.api to client '" + clientId + "'? [y/N] ", "y");
+            command.assertExit(0, "Media scope already present.");
+        }
+        assertThat(jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM administrator_audit WHERE target_client_id = ? "
+                                + "AND action = 'MEDIA_SCOPE_ADDED_TO_CLIENT' AND outcome = 'APPLIED'",
+                        Integer.class,
+                        clientId))
+                .isEqualTo(1);
     }
 
     private void bootstrapInput(Command command, String password, String confirmation) throws Exception {
@@ -169,20 +225,22 @@ class OperatorCommandsIT {
         private final ResultCallback.Adapter<Frame> callback;
         private final String execId;
 
-        Command(String name, boolean terminal) throws IOException {
+        Command(String name, boolean terminal, String... options) throws IOException {
+            String[] command = new String[6 + options.length];
+            command[0] = "java";
+            command[1] = "-jar";
+            command[2] = "/identity.jar";
+            command[3] = "--identity.command=" + name;
+            command[4] = "--identity.server-enabled=true";
+            command[5] = "--server.port=-1";
+            System.arraycopy(options, 0, command, 6, options.length);
             execId = TERMINAL.getDockerClient()
                     .execCreateCmd(TERMINAL.getContainerId())
                     .withAttachStdin(terminal)
                     .withAttachStdout(true)
                     .withAttachStderr(true)
                     .withTty(terminal)
-                    .withCmd(
-                            "java",
-                            "-jar",
-                            "/identity.jar",
-                            "--identity.command=" + name,
-                            "--identity.server-enabled=true",
-                            "--server.port=-1")
+                    .withCmd(command)
                     .exec()
                     .getId();
             callback = new ResultCallback.Adapter<>() {
