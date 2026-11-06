@@ -15,22 +15,31 @@ The backend sections cover Java packages; the frontend section defines a React-o
 ```text
 com.ecommerce.<service>/
 ├── <Service>Application.java
-├── configuration/             # Service composition and bean wiring, when needed
+├── configuration/             # Service properties and composition
+├── adapter/web/                # Service-wide REST errors/security, when needed
 └── <feature>/
-    ├── domain/                # Business models and business rules
-    ├── application/           # Use cases, transaction orchestration, required ports
-    ├── infrastructure/        # Persistence and external/framework integrations
-    └── api/                   # Incoming adapters: HTTP, CLI, message consumers
+    ├── domain/                 # Business models and business rules
+    ├── application/
+    │   ├── service/            # Use-case orchestration
+    │   ├── port/               # Required abstractions
+    │   ├── model/              # Related application input/output models
+    │   └── exception/          # Related application errors
+    └── adapter/                # Feature-owned incoming and outgoing adapters
+        ├── web/
+        ├── cli/
+        ├── persistence/
+        └── ...
 ```
 
 This tree is illustrative, not a list of mandatory directories. Create a package only when it contains code with a distinct responsibility.
+
+Keep capability-owned code inside its feature even when the service currently has one capability. Service-wide HTTP concerns, such as a global exception handler or security filter chain, may live in root `adapter/web`; feature-specific endpoints stay under that feature's `adapter/web`.
 
 | Package | Responsibility | Typical contents |
 | --- | --- | --- |
 | `domain` | Business concepts and invariants | Entities, value objects, domain policies and domain errors |
 | `application` | Execute use cases and coordinate work | Application services, transaction boundaries, use-case input/output models, interfaces for required external capabilities |
-| `infrastructure` | Implement technical details and outgoing adapters | JDBC repositories, external clients, framework integrations |
-| `api` | Translate incoming interactions into use-case calls | Controllers, transport DTOs, validation/error mapping, CLI commands, message handlers |
+| `adapter` | Translate incoming interactions and implement required technical integrations | Controllers, transport DTOs, CLI commands, message handlers, JDBC repositories and external clients |
 | Service `configuration` | Assemble the application | Bean wiring, properties and service-wide framework configuration |
 
 Feature-specific configuration may stay alongside the integration it configures. Do not put business decisions into configuration classes or let a general `configuration` package become a container for unrelated behavior.
@@ -38,13 +47,13 @@ Feature-specific configuration may stay alongside the integration it configures.
 ## Backend dependency rules
 
 - `domain` must not depend on `application`, adapters, Spring, HTTP or persistence frameworks. Business rules must be understandable and testable without those technologies.
-- `application` may depend on `domain` and interfaces describing capabilities it needs. It must not import controllers, transport DTOs or concrete infrastructure implementations. Spring service and transaction annotations are acceptable; a framework-free application layer is not required.
-- `api` calls application use cases. Keep HTTP, console and messaging concerns in the incoming adapter; do not bypass use cases to perform business writes directly in a repository.
-- `infrastructure` implements required interfaces and may depend on application/domain types. JDBC, ORM, vendor APIs and protocol-specific models stay at this boundary.
+- `application` may depend on `domain` and interfaces describing capabilities it needs. Keep those ports in `application/port` when there is a distinct group. It must not import controllers, transport DTOs or concrete adapters. Spring service and transaction annotations are acceptable; a framework-free application layer is not required.
+- Incoming adapters call application use cases. Keep HTTP, console and messaging concerns in their adapter packages; do not bypass use cases to perform business writes directly in a repository.
+- Outgoing adapters implement required interfaces and may depend on application/domain types. JDBC, ORM, vendor APIs and protocol-specific models stay at this boundary.
 - Composition code may reference both interfaces and implementations to wire them together. This does not allow use cases to reference implementation classes.
 - Keep dependencies between features acyclic. Consumers call an explicitly exposed application interface/facade or use-case contract of the owning feature; do not import another feature's persistence implementation or query its tables directly. Within a service, coordinate a necessary cross-feature transaction explicitly. Across services, use approved HTTP/event contracts, never shared table access.
 
-An interface belongs with the inner responsibility that requires it, usually `application`; its technical implementation belongs in `infrastructure`. A domain-specific abstraction may belong in `domain` when the business model itself needs it. Do not create matching interface/implementation pairs for every use case, helper or DTO. A concrete application service can be called directly by its incoming adapters.
+An interface belongs with the inner responsibility that requires it, usually `application/port`; its technical implementation belongs in an adapter package such as `adapter/persistence` or `adapter/storage`. A domain-specific abstraction may belong in `domain` when the business model itself needs it. Do not create matching interface/implementation pairs for every use case, helper or DTO. A concrete application service can be called directly by its incoming adapters.
 
 For example, an administrator-disable use case can require a grant-revocation port implemented by the authorization capability. Preserve the approved atomicity, lock order and rollback behavior when moving that collaboration behind an interface. An asynchronous event is not an equivalent replacement when revocation must commit with account disable.
 
@@ -52,13 +61,13 @@ For example, an administrator-disable use case can require a grant-revocation po
 
 Split a package when it contains distinct responsibilities or navigation and ownership become unclear, rather than at an arbitrary file count. Choose names that explain those responsibilities.
 
-Group related exceptions under the owning layer's `exception` package, such as `admin/application/exception`, rather than mixing a family of error classes with use cases. Domain errors stay with their domain owner; HTTP error advice/serialization belongs in an adapter package such as `api/error`. Do not collect all layers' exceptions into a service-wide generic exception package. Keep distinct types when callers need their semantics; an exception carrying only a free-form message is not a reliable error contract.
+Group related exceptions under the owning layer's `exception` package, such as `admin/application/exception`, rather than mixing a family of error classes with use cases. Domain errors stay with their domain owner; HTTP error advice and serialization belong in `adapter/web`. Do not collect all layers' exceptions into a service-wide generic exception package. Keep distinct types when callers need their semantics; an exception carrying only a free-form message is not a reliable error contract.
 
-For example, a feature may need `infrastructure/persistence` and `infrastructure/oauth2`, or `api/http` and `api/cli`. Another feature may have only a use case and one adapter. They need not have identical trees. Avoid generic packages such as `common`, `utils` or `server` becoming a default destination for unrelated code.
+For example, a feature may need `adapter/persistence` and `adapter/oauth2`, or `adapter/web` and `adapter/cli`. Another feature may have only a use case and one adapter. They need not have identical trees. Avoid generic packages such as `common`, `utils` or `server` becoming a default destination for unrelated code.
 
-Technical capabilities such as an OAuth2 server need not invent a business domain layer. Framework-specific filters, providers and persistence integrations can be grouped by protocol responsibility. Keep their technical dependencies explicit and expose only the collaboration needed by business use cases. Keep package-private collaborators together where that preserves encapsulation.
+Technical capabilities such as an OAuth2 server need not invent a business domain layer. Framework-specific filters, providers and persistence integrations can be grouped by protocol responsibility under `adapter/oauth2`. Keep their technical dependencies explicit and expose only the collaboration needed by business use cases. Keep package-private collaborators together where that preserves encapsulation.
 
-Simple persistence-backed reads may use a JDBC query adapter without introducing a domain aggregate or a command-style service. Keep SQL in infrastructure; when a read crosses the application boundary, expose an application-owned query contract and result model. A transport controller should not depend on a concrete JDBC implementation.
+Simple persistence-backed reads may use a JDBC query adapter without introducing a domain aggregate or a command-style service. Keep SQL in `adapter/persistence`; when a read crosses the application boundary, expose an application-owned query contract and result model. A transport controller should not depend on a concrete JDBC implementation.
 
 Reuse code within its owning feature first. Introduce a shared package or library only when actual consumers and stable shared semantics justify it; do not move unrelated helpers into shared code merely because multiple features use the same technology.
 

@@ -6,12 +6,12 @@ Identity owns administrator credentials, role and permission assignments, OAuth/
 
 Packages follow the [backend code organization convention](../../docs/06-development/code-organization.md):
 
-- `admin/domain` contains account and entitlement models. `admin/application` owns management/bootstrap use cases, repository/query ports and their result models. HTTP and console adapters live in `admin/api`; JDBC implementations live in `admin/infrastructure/persistence`.
-- Related application exceptions live in `admin/application/exception`. `api/error/ApiExceptionHandler` maps them and MVC failures to the shared [HTTP error contract](../../docs/04-contracts/http-errors.md); controllers do not repeat status-mapping catches. Advice handles only `/api/**` requests, and security handlers emit the same envelope for bearer failures. OAuth2 errors and browser login redirects retain their protocol behavior.
+- `admin/domain` contains account and entitlement models. `admin/application/service` owns management/bootstrap use cases and the `AdministratorDirectory` collaboration facade; `admin/application/port` contains repository, query and revocation abstractions. Related administrator exceptions stay in `admin/application/exception`.
+- Administrator HTTP/CLI adapters live in `admin/adapter/web` and `admin/adapter/cli`; JDBC implementations live in `admin/adapter/persistence`. Root `adapter/web/GlobalExceptionHandler` and `ApiProblems` map API and security failures to the shared [HTTP error contract](../../docs/04-contracts/http-errors.md). Advice handles only `/api/**`; OAuth2 errors and browser login redirects retain their protocol behavior.
 - `AdministratorDirectory` is the admin-owned collaboration API for authorization: account lookup, credentials, entitlements, audit and account row locks. Lock/audit methods require an existing transaction so authorization operations retain their account-before-family-before-authorization lock order.
 - `AccountGrantRevocation` is an application-owned port. Authorization implements it synchronously within the administrator-disable transaction, including rollback if the last-admin invariant rejects the change.
-- `authorization/infrastructure` groups framework-specific OAuth2 wiring/providers/filters, login, client registration, token signing/claims, grant lifecycle and persistence. These technical adapters use Spring Authorization Server models directly rather than inventing a separate domain layer. The console client-registration adapter calls the `authorization/application/ClientRegistration` contract.
-- `configuration` owns service properties and password-encoder wiring. Package-private OAuth2 providers/filters remain beside their security configuration. Tests mirror the source packages; `ArchitectureBoundaryTest` checks the key dependency and table-ownership boundaries without extra architecture tooling.
+- `authorization/adapter/oauth2` groups framework-specific OAuth2 wiring/providers/filters, login, client registration, token signing/claims, grant lifecycle and persistence. These technical adapters use Spring Authorization Server models directly rather than inventing a separate domain layer. CLI adapters call the `authorization/application/port/ClientRegistration` contract.
+- `configuration` owns service properties and password-encoder wiring. Package-private OAuth2 providers/filters remain beside their security configuration. Tests mirror source packages; `ArchitectureBoundaryTest` checks dependency and table-ownership boundaries without extra architecture tooling.
 
 Package moves do not change endpoint paths, JWT claims, configuration keys, SQL migrations or CLI arguments. REST errors now have a defined Problem Details body; update operations return 404 when the target administrator does not exist. Browser authentication through the BFF remains separate work.
 
@@ -34,6 +34,14 @@ java -jar services/identity/target/identity-0.0.1-SNAPSHOT.jar --identity.comman
 ```
 
 The command prompts for the secret and stores only its password hash. Repeating registration is a no-op only when the existing settings match; mismatches fail without overwriting the client. Authorization Code with PKCE S256 is the default. Refresh grant registration is disabled unless `IDENTITY_REFRESH_GRANT_ENABLED=true`; enabled refresh grants rotate tokens and revoke a family when a consumed ancestor is replayed.
+
+Migration V6 adds the `media:read`, `media:upload` and `media:delete` permissions for audience `media-api`, initially assigned to `SUPER_ADMIN`. New registrations may request the `media.api` scope. To add that scope to one existing client without replacing its secret, callback URIs, grants or other scopes, run the explicit interactive operator command after migration:
+
+```sh
+java -jar services/identity/target/identity-0.0.1-SNAPSHOT.jar --identity.server-enabled=false --identity.command=add-media-scope --client-id=backoffice-bff
+```
+
+The command adds only the scope and writes an audit row with the target client ID. It is idempotent. Existing authorizations and tokens do not gain Media access automatically; the user must authorize the scope again.
 
 Keep old public keys available long enough for all tokens signed with them to expire, including cache and clock-skew margins. Back up private keys and database independently. Do not regenerate a key automatically after loss.
 

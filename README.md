@@ -9,7 +9,7 @@ Ecommerce monorepo in the **platform foundation / bootstrap** stage. Application
 | `services/ecommerce/` | Ecommerce backend | Spring Boot skeleton |
 | `services/identity/` | Identity service | Spring Boot skeleton |
 | `services/notification/` | Notification service | Spring Boot skeleton |
-| `services/media/` | Media service | Spring Boot skeleton |
+| `services/media/` | Media service | Private image upload, metadata, signed download links and durable deletion |
 | `services/backoffice-bff/`, `services/storefront-bff/` | Reserved BFF locations | Placeholders |
 | `web/backoffice/` | React admin application | Frontend skeleton |
 | `web/storefront/` | Storefront | Placeholder |
@@ -46,7 +46,18 @@ The Identity `local` Spring profile imports the root `.env` as a properties file
 
 On Bash, use `./services/identity/mvnw -f services/identity/pom.xml -Dspring-boot.run.profiles=local spring-boot:run`. This does not require copying `.env` into `services/identity/`. Docker Compose still reads `.env` separately through `--env-file`.
 
+
 Start PostgreSQL first. A fresh Compose volume creates the Identity database owned by `POSTGRES_USER`; for an existing volume, run the bootstrap described in [Identity database setup](infra/README.md#identity-database). Set `IDENTITY_DB_USERNAME` and `IDENTITY_DB_PASSWORD` to the same values as `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env`. The example `IDENTITY_JWK_SET_PATH=../../secrets/identity/signing-keys.jwks` is relative to the Identity module working directory and resolves to the root `secrets/` directory; use a valid private RSA RS256 JWK set with key ID `identity-local-dev`. Keep the key local; the `secrets/` directory is ignored by Git. Change the callback URI variables only when configuring the actual BFF client. Stop the service with Ctrl+C.
+
+## Run Media from the repository root
+
+Media's `local` profile also imports the root `.env`; it does not need a copied env file. Start PostgreSQL and supply real credentials for an isolated Cloudinary environment before running:
+
+```powershell
+.\services\media\mvnw.cmd -f services\media\pom.xml "-Dspring-boot.run.profiles=local" spring-boot:run
+```
+
+Set `MEDIA_DB_USERNAME` and `MEDIA_DB_PASSWORD` to the local PostgreSQL role credentials. A fresh Compose volume creates a separate `media` database; existing volumes need the one-time setup described in [infrastructure operations](infra/README.md#identity-database). Media runs on port 9001 by default and needs `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET`. The `.env.example` leaves these provider credentials blank; do not commit real credentials. See the [Media Service guide](services/media/README.md) for API, access and cleanup behavior.
 
 ## Documentation and workflow
 
