@@ -20,7 +20,7 @@ identity:
     refresh-token-grant-enabled: ${IDENTITY_REFRESH_GRANT_ENABLED:false}
     redirect-uris: ${IDENTITY_CLIENT_REDIRECT_URIS:}
     post-logout-redirect-uris: ${IDENTITY_CLIENT_POST_LOGOUT_REDIRECT_URIS:}
-    scopes: ${IDENTITY_CLIENT_SCOPES:openid,profile,ecommerce.api,identity.admin}
+    scopes: ${IDENTITY_CLIENT_SCOPES:openid,profile,ecommerce.api,identity.admin,media.api}
 
 # MVC DEBUG/TRACE diagnostics can contain rejected credentials or request bodies.
 logging:
