@@ -1,6 +1,8 @@
 package com.ecommerce.api.adapter.web;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,6 +30,9 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import com.ecommerce.api.adapter.web.support.SecurityProbeConfiguration;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -41,8 +46,13 @@ import com.sun.net.httpserver.HttpServer;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(SecurityProbeConfiguration.class)
+@Testcontainers
 class ResourceServerSecurityIT {
     private static final String ISSUER = "https://identity.test";
+
+    @Container
+    private static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6");
+
     private static RSAKey signingKey;
     private static HttpServer jwksServer;
 
@@ -57,6 +67,9 @@ class ResourceServerSecurityIT {
     @DynamicPropertySource
     static void securityProperties(DynamicPropertyRegistry registry) {
         startJwks();
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("identity.issuer", () -> ISSUER);
         registry.add(
                 "identity.jwk-set-uri",
@@ -149,6 +162,43 @@ class ResourceServerSecurityIT {
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
+    void validatesRequestBodiesAndReturnsSafeFieldErrors() throws Exception {
+        String bearer = "Bearer " + token(ISSUER, "ecommerce-api", List.of("test-probe:read"), "ecommerce.api");
+        mvc.perform(post("/api/test/validation-probe")
+                        .header("Authorization", bearer)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Warehouse\",\"code\":\"A1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Warehouse"));
+
+        String invalidBody = "{\"name\":\"\",\"code\":\"this-value-is-way-too-long\"}";
+        var invalid = mvc.perform(post("/api/test/validation-probe")
+                        .header("Authorization", bearer)
+                        .contentType("application/json")
+                        .content(invalidBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[*].pointer", containsInAnyOrder("/name", "/code")))
+                .andReturn();
+        org.assertj.core.api.Assertions.assertThat(invalid.getResponse().getContentAsString())
+                .doesNotContain("this-value-is-way-too-long", "Warehouse", "rejectedValue", "SQL");
+
+        var malformed = mvc.perform(post("/api/test/validation-probe")
+                        .header("Authorization", bearer)
+                        .contentType("application/json")
+                        .content("{not-json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andReturn();
+        org.assertj.core.api.Assertions.assertThat(malformed.getResponse().getContentAsString())
+                .doesNotContain("not-json", "JsonParseException", "SQL");
     }
 
     private String token(String issuer, String audience, List<String> permissions, String scope) {

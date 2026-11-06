@@ -11,6 +11,7 @@ public class SecurityProbeConfiguration {
     @Bean
     Customizer<AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry>
             probeAuthorization() {
-        return rules -> rules.requestMatchers("/api/test/security-probe").authenticated();
+        return rules -> rules.requestMatchers("/api/test/security-probe", "/api/test/validation-probe")
+                .authenticated();
     }
 }
