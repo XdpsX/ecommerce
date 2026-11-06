@@ -1,3 +1,40 @@
 spring:
   application:
     name: media
+  datasource:
+    url: ${MEDIA_DB_URL:jdbc:postgresql://localhost:5432/media}
+    username: ${MEDIA_DB_USERNAME:ecommerce}
+    password: ${MEDIA_DB_PASSWORD}
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+server:
+  port: ${MEDIA_PORT:9001}
+identity:
+  issuer: ${IDENTITY_ISSUER:http://localhost:9000}
+  jwk-set-uri: ${IDENTITY_JWK_SET_URI:http://localhost:9000/oauth2/jwks}
+media:
+  audience: ${MEDIA_AUDIENCE:media-api}
+  download-link-ttl: ${MEDIA_DOWNLOAD_LINK_TTL:PT60S}
+  provider-timeout: ${MEDIA_PROVIDER_TIMEOUT:PT30S}
+  max-input-bytes: ${MEDIA_MAX_INPUT_BYTES:5242880}
+  max-output-bytes: ${MEDIA_MAX_OUTPUT_BYTES:4194304}
+  max-pixels: ${MEDIA_MAX_PIXELS:20000000}
+  max-side: ${MEDIA_MAX_SIDE:10000}
+  max-concurrent-decodes: ${MEDIA_MAX_CONCURRENT_DECODES:1}
+  storage:
+    cloudinary:
+      cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+      api-key: ${CLOUDINARY_API_KEY:}
+      api-secret: ${CLOUDINARY_API_SECRET:}
+      folder: ${CLOUDINARY_FOLDER:ecommerce-media}
+  cleanup:
+    enabled: ${MEDIA_CLEANUP_ENABLED:true}
+    interval: ${MEDIA_CLEANUP_INTERVAL:PT1M}
+    abandon-after: ${MEDIA_UPLOAD_ABANDON_AFTER:PT10M}
+    batch-size: ${MEDIA_CLEANUP_BATCH_SIZE:10}
+    lease-duration: ${MEDIA_CLEANUP_LEASE:PT2M}
+    retry-cap: ${MEDIA_CLEANUP_RETRY_CAP:PT1H}
