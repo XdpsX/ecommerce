@@ -1,6 +1,12 @@
 spring:
   application:
     name: ecommerce
+  datasource:
+    url: ${ECOMMERCE_DB_URL:jdbc:postgresql://localhost:5432/ecommerce}
+    username: ${ECOMMERCE_DB_USERNAME:ecommerce}
+    password: ${ECOMMERCE_DB_PASSWORD}
+  flyway:
+    enabled: true
 identity:
   issuer: ${IDENTITY_ISSUER:http://localhost:9000}
   jwk-set-uri: ${IDENTITY_JWK_SET_URI:http://localhost:9000/oauth2/jwks}
