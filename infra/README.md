@@ -34,16 +34,19 @@ Both host ports bind to loopback. Containers on the backend network use service 
 
 ## Identity database
 
-Identity and Media use separate databases on the same local PostgreSQL server, owned by the existing `POSTGRES_USER` role. They do not need separate login roles. On a fresh PostgreSQL volume, Compose runs `init.sql` to create each database if missing. Existing volumes do not rerun initialization scripts, so run the mounted script manually when setting up an existing volume; if either database already exists but is owned by another role, also change its owner:
+Identity, Ecommerce and Media use separate databases on the same local PostgreSQL server, owned by the existing `POSTGRES_USER` role. They do not need separate login roles. On a fresh PostgreSQL volume, Compose runs `init.sql` to create each database if missing. Existing volumes do not rerun initialization scripts, so run the mounted script manually when setting up an existing volume; if a database already exists but is owned by another role, also change its owner:
 
 ```powershell
 docker compose --env-file .env -f infra/compose/compose.yml up -d postgres
 docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/10-init.sql'
 docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER DATABASE identity OWNER TO $POSTGRES_USER"'
+docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER DATABASE ecommerce OWNER TO $POSTGRES_USER"'
 docker compose --env-file .env -f infra/compose/compose.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER DATABASE media OWNER TO $POSTGRES_USER"'
 ```
 
 Set `IDENTITY_DB_URL=jdbc:postgresql://localhost:5432/identity`, `IDENTITY_DB_USERNAME` to the same value as `POSTGRES_USER`, and `IDENTITY_DB_PASSWORD` to the same value as `POSTGRES_PASSWORD`. The example values are `ecommerce` for both username and password. When running from the repository root, the Identity `local` Spring profile imports root `.env`; Spring Boot otherwise does not load it automatically. Replace the local passwords and supply a valid local signing-key file before starting the authorization server. Never use these local values in a shared environment.
+
+Set `ECOMMERCE_DB_URL=jdbc:postgresql://localhost:5432/ecommerce`, `ECOMMERCE_DB_USERNAME` and `ECOMMERCE_DB_PASSWORD` to the PostgreSQL role credentials. Ecommerce's `local` profile imports root `.env` when launched with `services/ecommerce` as its working directory; set this as the IDE working directory or supply the variables directly. Its Flyway migration creates the initial version history at startup.
 
 Set `MEDIA_DB_URL=jdbc:postgresql://localhost:5432/media`, `MEDIA_DB_USERNAME` and `MEDIA_DB_PASSWORD` to the same PostgreSQL role credentials. Media's `local` profile imports the root `.env`; run its Maven wrapper from the repository root with `-Dspring-boot.run.profiles=local`. Media requires `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET`; use an isolated Cloudinary environment and never commit these values. The checked-in defaults do not include usable provider credentials.
 
