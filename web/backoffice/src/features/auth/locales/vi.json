@@ -1,0 +1,8 @@
+{
+  "login": {
+    "title": "Đăng nhập vào không gian làm việc",
+    "description": "Nhà cung cấp danh tính sẽ xử lý đăng nhập bảo mật khi tích hợp máy chủ sẵn sàng.",
+    "unavailable": "Đăng nhập hiện chưa khả dụng",
+    "back": "Quay lại bảng điều khiển"
+  }
+}

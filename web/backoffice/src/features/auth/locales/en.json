@@ -1,0 +1,8 @@
+{
+  "login": {
+    "title": "Sign in to your workspace",
+    "description": "Secure sign-in will be handled by the identity provider when the server integration is ready.",
+    "unavailable": "Sign-in is not available yet",
+    "back": "Back to dashboard"
+  }
+}
