@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  title: Backoffice Browser API
+  version: 1.0.0
+  description: >-
+    Issue 14 approved browser contract. Cookie authentication; no browser OAuth tokens.
+    Login is top-level navigation to /oauth2/authorization/identity?ui_locales=<en|vi>
+    with optional returnTo=<non-default-local-path>; returnTo is omitted for the default /.
+    The BFF forwards only a supported locale to Identity and preserves the PKCE request.
+    Local logout does not terminate Identity SSO. Access-token expiry invalidates the
+    BFF session without refresh or clock-skew extension. All responses are no-store.
+servers:
+  - url: /
+security:
+  - sessionCookie: []
+paths:
+  /bff/session:
+    get:
+      operationId: getSession
+      responses:
+        '200':
+          description: Authenticated while the server-owned token expires strictly after now.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [subject]
+                properties:
+                  subject: { type: string, format: uuid }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+  /bff/csrf:
+    get:
+      operationId: getCsrf
+      security: []
+      responses:
+        '200':
+          description: Materialized CSRF token, bound to the current browser session.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, headerName]
+                properties:
+                  token: { type: string }
+                  headerName: { type: string, enum: [X-CSRF-TOKEN] }
+        '503': { $ref: '#/components/responses/Unavailable' }
+  /bff/logout:
+    post:
+      operationId: logout
+      security: []
+      parameters:
+        - in: header
+          name: X-CSRF-TOKEN
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: >-
+            Local session and authorized client invalidated. Also succeeds for an
+            anonymous session with a valid CSRF token. Identity SSO may remain active.
+        '403':
+          description: Missing or invalid CSRF token; code CSRF_INVALID. Never replay automatically.
+          content:
+            application/problem+json:
+              schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: BACKOFFICE_SESSION
+  responses:
+    Unauthenticated:
+      description: Missing, expired or unusable server-owned authorized client; code UNAUTHENTICATED.
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }
+    Unavailable:
+      description: Session infrastructure unavailable; code SERVICE_UNAVAILABLE. Do not treat as logout.
+      content:
+        application/problem+json:
+          schema: { $ref: 'common/problem.yaml#/components/schemas/Problem' }

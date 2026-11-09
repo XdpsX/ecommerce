@@ -1,3 +1,4 @@
+import { Button, buttonVariants } from '@/shared/components/ui/button'
 import { Link, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
@@ -9,13 +10,9 @@ export function RouteError() {
     <section className="state-card" aria-labelledby="route-error-title">
       <h1 id="route-error-title">{t('routeError.title')}</h1>
       <p>{t('routeError.description')}</p>
-      <button
-        className="button button-primary"
-        onClick={() => void router.invalidate()}
-        type="button"
-      >
+      <Button onClick={() => void router.invalidate()} type="button">
         {t('routeError.retry')}
-      </button>
+      </Button>
     </section>
   )
 }
@@ -30,7 +27,7 @@ export function NotFound() {
         {t('notFound.title')}
       </h1>
       <p>{t('notFound.description')}</p>
-      <Link className="button button-primary" to="/">
+      <Link className={buttonVariants()} to="/">
         {t('notFound.back')}
       </Link>
     </section>

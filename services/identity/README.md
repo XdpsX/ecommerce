@@ -35,6 +35,14 @@ java -jar services/identity/target/identity-0.0.1-SNAPSHOT.jar --identity.comman
 
 The command prompts for the secret and stores only its password hash. Repeating registration is a no-op only when the existing settings match; mismatches fail without overwriting the client. Authorization Code with PKCE S256 is the default. Refresh grant registration is disabled unless `IDENTITY_REFRESH_GRANT_ENABLED=true`; enabled refresh grants rotate tokens and revoke a family when a consumed ancestor is replayed.
 
+For local `.env` settings, run from `services/identity` after packaging:
+
+```powershell
+java -Duser.timezone=UTC -jar target/identity-0.0.1-SNAPSHOT.jar --spring.profiles.active=local --identity.command=register-client
+```
+
+Enter the same secret configured as `BFF_CLIENT_SECRET`. Setting `IDENTITY_CLIENT_*` in `.env` does not register the client automatically. Confirm the callback matches the BFF browser callback before starting sign-in.
+
 Migration V6 adds the `media:read`, `media:upload` and `media:delete` permissions for audience `media-api`, initially assigned to `SUPER_ADMIN`. New registrations may request the `media.api` scope. To add that scope to one existing client without replacing its secret, callback URIs, grants or other scopes, run the explicit interactive operator command after migration:
 
 ```sh
@@ -57,7 +65,13 @@ The command prompts for a username and password, stores a password hash, assigns
 
 ## HTTP and token behavior
 
-The OAuth/OIDC server publishes discovery metadata, authorization, token, revocation, JWKS, UserInfo and logout endpoints. Login uses a CSRF-protected form. The administrator API is bearer-only under `/api/admin/**`; it requires an access token with `identity-api` audience and the matching permission claim. Browser session cookies do not authenticate these API routes.
+The OAuth/OIDC server publishes discovery metadata, authorization, token, revocation, JWKS, UserInfo and logout endpoints. `/login` is a server-rendered, CSRF-protected English/Vietnamese form; a supported OIDC `ui_locales` hint takes precedence for that login, followed by the Identity session preference, a supported `Accept-Language`, then English. The locale survives failed credential attempts and session fixation. Login HTML is not cached, and its stylesheet is served from `/login-assets/**`. The request cache preserves only original GET authorization requests, so browser favicon or error requests cannot replace the pending OAuth callback flow. The administrator API is bearer-only under `/api/admin/**`; it requires an access token with `identity-api` audience and the matching permission claim. Browser session cookies do not authenticate these API routes. Backoffice uses the separate [BFF](../backoffice-bff/README.md) for its browser session; local BFF logout does not end Identity SSO.
+
+## Login presentation
+
+The login logo links back to the configured `IDENTITY_BACKOFFICE_URL`, independent of OAuth callback/return parameters. The local profile defaults to `http://localhost:3000`; set the trusted public Backoffice URL for deployment. Clicking it leaves the credential form without completing login or ending an existing Identity SSO session.
+
+The standalone Thymeleaf login page uses the restrained green/light Backoffice palette and Geist Variable font. Its matching tokens are kept in `src/main/resources/static/login-assets/identity.css`; self-hosted Latin, extended Latin and Vietnamese font subsets plus their license are beside that stylesheet. This page does not load Backoffice JavaScript or build output. The [Backoffice README](../../web/backoffice/README.md#ui-primitives-and-visual-tokens) documents the corresponding semantic theme source.
 
 Access tokens live for five minutes and carry the administrator UUID as `sub`, audience-scoped effective permissions, roles, scopes, issuer and expiry. Permissions are a token snapshot; Ecommerce accepts an already-issued JWT until expiry plus its configured clock skew. Account disable blocks old browser sessions and new token/refresh use, revokes active refresh families, and invalidates outstanding authorization codes and refresh tokens. Re-enabling an account does not revive old grants. Refresh tokens rotate on use with an eight-hour sliding lifetime; replay revokes the token family. This is not an absolute session lifetime limit.
 

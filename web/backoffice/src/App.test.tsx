@@ -1,179 +1,348 @@
-import i18n from './app/i18n'
-import { getPreferredLanguage, LANGUAGE_STORAGE_KEY } from './app/i18n'
+﻿import i18n, { getPreferredLanguage, LANGUAGE_STORAGE_KEY } from './app/i18n'
 import { AppProvider } from './app/providers/AppProvider'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { server } from './test/server'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+let authenticated = true
+let logoutCalls = 0
+let sessionCalls = 0
+const subject = '11111111-1111-4111-8111-111111111111'
 function renderApp(initialPath = '/') {
   return render(<AppProvider initialPath={initialPath} />)
 }
-
 beforeEach(async () => {
   await i18n.changeLanguage('en')
-  window.localStorage.clear()
-  document.documentElement.lang = 'en'
-})
+  localStorage.clear()
+  authenticated = true
+  logoutCalls = 0
+  sessionCalls = 0
+  server.use(
+    http.get('*/bff/session', () => {
+      sessionCalls++
 
+      return authenticated
+        ? HttpResponse.json({ subject })
+        : new HttpResponse(null, { status: 401 })
+    }),
+    http.get('*/bff/csrf', () =>
+      HttpResponse.json({ token: 'csrf-test', headerName: 'X-CSRF-TOKEN' }),
+    ),
+    http.post('*/bff/logout', ({ request }) => {
+      logoutCalls++
+      expect(request.headers.get('X-CSRF-TOKEN')).toBe('csrf-test')
+      authenticated = false
+
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+})
 afterEach(() => {
   cleanup()
   window.history.replaceState({}, '', '/')
 })
-
-describe('Backoffice foundation', () => {
-  it('renders the temporary dashboard and informational sign-in entry', async () => {
+describe('Backoffice authentication foundation', () => {
+  it('opens the authenticated dashboard and signs out with CSRF', async () => {
     const user = userEvent.setup()
-
     renderApp()
-
-    expect(
-      await screen.findByRole('link', { name: 'Skip to content' }),
-    ).toHaveAttribute('href', '#main-content')
-    expect(
-      screen.getByRole('navigation', { name: 'Primary navigation' }),
-    ).toBeInTheDocument()
     expect(
       await screen.findByRole('heading', { name: 'Dashboard' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: 'Welcome to the backoffice.' }),
-    ).toBeInTheDocument()
-
-    await user.click(screen.getByRole('link', { name: 'Sign in' }))
-
+      screen.getByRole('link', { name: 'Skip to content' }),
+    ).toHaveAttribute('href', '#main-content')
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(
       await screen.findByRole('heading', { name: 'Sign in to your workspace' }),
     ).toBeInTheDocument()
+    expect(logoutCalls).toBe(1)
     expect(
-      screen.getByRole('button', { name: 'Sign-in is not available yet' }),
-    ).toBeDisabled()
-  })
-
-  it('provides an accessible navigation toggle', async () => {
-    const user = userEvent.setup()
-
-    renderApp()
-
-    const toggle = await screen.findByRole('button', {
-      name: 'Open navigation',
-    })
-    const navigation = screen.getByRole('navigation', {
-      name: 'Primary navigation',
-    })
-
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    await user.click(toggle)
-
-    expect(
-      screen.getByRole('button', { name: 'Close navigation' }),
-    ).toHaveAttribute('aria-expanded', 'true')
-    expect(navigation).toHaveClass('is-open')
-    expect(
-      within(navigation).getByRole('link', { name: 'Sign in' }),
+      screen.getByText(/Identity SSO may remain active/),
     ).toBeInTheDocument()
   })
-
-  it('switches language, stores the choice and updates the document language', async () => {
-    const user = userEvent.setup()
-
+  it('protects the dashboard and omits the default return path', async () => {
+    authenticated = false
     renderApp()
+    const action = await screen.findByRole('heading', {
+      name: 'Sign in to your workspace',
+    })
+    expect(action).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Dashboard' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen
+        .getAllByRole('link', { name: 'Sign in' })
+        .find((link) => link.getAttribute('href')?.startsWith('/oauth2/')),
+    ).toHaveAttribute('href', '/oauth2/authorization/identity?ui_locales=en')
+  })
+  it('revalidates the session when entering the protected dashboard again', async () => {
+    authenticated = false
+    renderApp('/login')
 
-    const selector = await screen.findByRole('combobox', { name: 'Language' })
-    await user.selectOptions(selector, 'vi')
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Sign in to your workspace',
+      }),
+    ).toBeInTheDocument()
+    expect(sessionCalls).toBe(1)
+
+    authenticated = true
+    fireEvent.click(
+      screen.getByRole('link', { name: 'Commerce Backoffice home' }),
+    )
 
     expect(
       await screen.findByRole('heading', { name: 'Dashboard' }),
     ).toBeInTheDocument()
+    expect(sessionCalls).toBeGreaterThan(1)
+  })
+  it('keeps authenticated users out of guest-only login', async () => {
+    renderApp('/login')
     expect(
-      screen.getByRole('heading', {
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Sign in to your workspace' }),
+    ).not.toBeInTheDocument()
+  })
+  it('rejects an external return destination', async () => {
+    authenticated = false
+    renderApp('/login?returnTo=https%3A%2F%2Fevil.example')
+    await screen.findByRole('heading', { name: 'Sign in to your workspace' })
+    expect(
+      screen
+        .getAllByRole('link', { name: 'Sign in' })
+        .find((link) => link.getAttribute('href')?.startsWith('/oauth2/')),
+    ).toHaveAttribute('href', '/oauth2/authorization/identity?ui_locales=en')
+  })
+  it('forwards the selected locale and retains only a non-default return path', async () => {
+    authenticated = false
+    const user = userEvent.setup()
+    renderApp('/login?returnTo=%2Forders%3Fstate%3Dpending%23today')
+    await screen.findByRole('heading', { name: 'Sign in to your workspace' })
+
+    const signIn = screen
+      .getAllByRole('link', { name: 'Sign in' })
+      .find((link) => link.getAttribute('href')?.startsWith('/oauth2/'))!
+    const englishAuthorization = new URL(
+      signIn.getAttribute('href')!,
+      window.location.origin,
+    )
+    expect(englishAuthorization.searchParams.get('ui_locales')).toBe('en')
+    expect(englishAuthorization.searchParams.get('returnTo')).toBe(
+      '/orders?state=pending#today',
+    )
+
+    await user.click(screen.getByRole('combobox', { name: 'Language' }))
+    await user.keyboard('{ArrowDown}{Enter}')
+    const vietnameseAuthorization = new URL(
+      screen
+        .getAllByRole('link', { name: 'Đăng nhập' })
+        .find((link) => link.getAttribute('href')?.startsWith('/oauth2/'))!
+        .getAttribute('href')!,
+      window.location.origin,
+    )
+    expect(vietnameseAuthorization.searchParams.get('ui_locales')).toBe('vi')
+    expect(vietnameseAuthorization.searchParams.get('returnTo')).toBe(
+      '/orders?state=pending#today',
+    )
+  })
+  it('accepts an old explicit root return path but emits a clean OAuth URL', async () => {
+    authenticated = false
+    renderApp('/login?returnTo=%2F')
+    await screen.findByRole('heading', { name: 'Sign in to your workspace' })
+
+    const authorization = new URL(
+      screen
+        .getAllByRole('link', { name: 'Sign in' })
+        .find((link) => link.getAttribute('href')?.startsWith('/oauth2/'))!
+        .getAttribute('href')!,
+      window.location.origin,
+    )
+    expect(authorization.searchParams.get('ui_locales')).toBe('en')
+    expect(authorization.searchParams.has('returnTo')).toBe(false)
+  })
+  it('hides private content until a pending session is resolved', async () => {
+    let release: (() => void) | undefined
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    server.use(
+      http.get('*/bff/session', async () => {
+        await gate
+
+        return new HttpResponse(null, { status: 401 })
+      }),
+    )
+    renderApp()
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Checking your session…',
+    )
+    expect(
+      screen.queryByRole('heading', { name: 'Dashboard' }),
+    ).not.toBeInTheDocument()
+    release?.()
+    expect(
+      await screen.findByRole('heading', { name: 'Sign in to your workspace' }),
+    ).toBeInTheDocument()
+  })
+  it('offers retry on infrastructure failure without pretending logout', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.get('*/bff/session', () => new HttpResponse(null, { status: 503 })),
+    )
+    renderApp()
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Your session could not be checked.',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Sign in to your workspace' }),
+    ).not.toBeInTheDocument()
+    server.use(http.get('*/bff/session', () => HttpResponse.json({ subject })))
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument()
+  })
+  it('shows failed logout and reconciles the still-authenticated session without replay', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('*/bff/logout', () => {
+        logoutCalls++
+
+        return new HttpResponse(null, { status: 503 })
+      }),
+    )
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Sign out' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Sign-out was not confirmed',
+    )
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument()
+    expect(logoutCalls).toBe(1)
+  })
+  it('reconciles an uncertain logout which actually invalidated the server session', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('*/bff/logout', () => {
+        authenticated = false
+        logoutCalls++
+
+        return HttpResponse.error()
+      }),
+    )
+    renderApp()
+    await user.click(await screen.findByRole('button', { name: 'Sign out' }))
+    expect(
+      await screen.findByRole('heading', { name: 'Sign in to your workspace' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(logoutCalls).toBe(1)
+  })
+  it('supports accessible mobile navigation and English/Vietnamese persistence', async () => {
+    const user = userEvent.setup()
+    renderApp()
+    await screen.findByRole('heading', { name: 'Dashboard' })
+    const toggle = screen.getByRole('button', { name: 'Open navigation' })
+    await user.click(toggle)
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('navigation', {
+        name: 'Primary navigation',
+      }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+    expect(toggle).toHaveFocus()
+    await user.click(toggle)
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('link', {
+        name: 'Dashboard',
+      }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+    expect(toggle).toHaveFocus()
+    await user.click(screen.getByRole('combobox', { name: 'Language' }))
+    await user.keyboard('{ArrowDown}{Enter}')
+    expect(
+      await screen.findByRole('heading', {
         name: 'Chào mừng bạn đến với trang quản trị.',
       }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('navigation', { name: 'Điều hướng chính' }),
-    ).toBeInTheDocument()
+      screen.getByRole('combobox', { name: 'Ngôn ngữ' }),
+    ).toHaveTextContent('Tiếng Việt')
     expect(document.documentElement.lang).toBe('vi')
-    expect(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('vi')
-  })
-
-  it('restores a saved language and falls back to English for unsupported preferences', async () => {
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 'vi')
-    await i18n.changeLanguage(getPreferredLanguage(window.localStorage))
-
-    const vietnameseApp = renderApp()
-    expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
-    ).toBeInTheDocument()
-    vietnameseApp.unmount()
-
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr')
-    const fallbackLanguage = getPreferredLanguage(window.localStorage)
-    expect(fallbackLanguage).toBe('en')
-    await i18n.changeLanguage(fallbackLanguage)
-
-    renderApp()
-    expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
-    ).toBeInTheDocument()
-    expect(document.documentElement.lang).toBe('en')
-  })
-
-  it('uses English resources when a Vietnamese translation is missing', () => {
-    i18n.addResource('en', 'common', 'fallbackProbe', 'English fallback')
-
-    expect(i18n.t('fallbackProbe', { lng: 'vi', ns: 'common' })).toBe(
-      'English fallback',
+    expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('vi')
+    expect(getPreferredLanguage(localStorage)).toBe('vi')
+    await user.click(screen.getByRole('button', { name: 'Mở điều hướng' }))
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Đăng xuất',
+      }),
     )
-  })
-
-  it('loads translations from their shared and feature-owned namespaces', () => {
-    expect(i18n.options.ns).toEqual(['common', 'auth', 'home'])
-    expect(i18n.t('navigation.dashboard', { ns: 'common' })).toBe('Dashboard')
-    expect(i18n.t('login.title', { ns: 'auth' })).toBe(
-      'Sign in to your workspace',
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     )
-    expect(i18n.t('dashboard.greeting', { ns: 'home' })).toBe(
-      'Welcome to the backoffice.',
-    )
-  })
-
-  it('translates login entry and not-found states', async () => {
-    await i18n.changeLanguage('vi')
-    const loginApp = renderApp('/login')
-
     expect(
       await screen.findByRole('heading', {
         name: 'Đăng nhập vào không gian làm việc',
       }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Đăng nhập hiện chưa khả dụng' }),
-    ).toBeDisabled()
-    loginApp.unmount()
-
+    expect(logoutCalls).toBe(1)
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr')
+    expect(getPreferredLanguage(localStorage)).toBe('en')
+  })
+  it('falls back to English resources and translates not-found states', async () => {
+    i18n.addResource('en', 'common', 'fallbackProbe', 'English fallback')
+    expect(i18n.t('fallbackProbe', { lng: 'vi', ns: 'common' })).toBe(
+      'English fallback',
+    )
+    await i18n.changeLanguage('vi')
     renderApp('/missing')
     expect(
-      await screen.findByRole('heading', {
-        name: /Không tìm thấy trang này\./,
-      }),
+      await screen.findByRole('heading', { name: /Không tìm thấy trang này/ }),
     ).toBeInTheDocument()
-    expect(screen.getByText('404')).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: 'Quay lại bảng điều khiển' }),
-    ).toBeInTheDocument()
+      screen.getByRole('link', { name: /bảng điều khiển/i }),
+    ).toHaveAttribute('href', '/')
     expect(i18n.t('routeError.title', { ns: 'common' })).toBe(
       'Không thể hiển thị trang này.',
     )
-    expect(i18n.t('routeError.retry', { ns: 'common' })).toBe('Thử lại')
   })
-
-  it('shows a deliberate not-found page for unknown routes in English', async () => {
-    renderApp('/missing')
-
+  it('rejects a malformed session payload instead of authenticating it', async () => {
+    server.use(
+      http.get('*/bff/session', () => HttpResponse.json({ subject: null })),
+    )
+    renderApp()
     expect(
       await screen.findByRole('heading', {
-        name: /We could not find that page\./,
+        name: 'Your session could not be checked.',
       }),
     ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Dashboard' }),
+      ).not.toBeInTheDocument(),
+    )
   })
 })

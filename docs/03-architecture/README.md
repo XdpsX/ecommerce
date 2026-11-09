@@ -2,15 +2,15 @@
 
 ## Current repository state
 
-The monorepo has four independent Spring Boot services: Ecommerce and Identity foundations plus a Media image-storage service; Notification remains a skeleton. `web/backoffice` is a React skeleton; `web/storefront` and both BFF directories are placeholders. Legacy business modules have not been migrated.
+The monorepo has Ecommerce and Identity foundations, a Media image-storage service and the [Backoffice BFF](../../services/backoffice-bff/README.md); Notification remains a skeleton. Backoffice has a protected temporary dashboard with English/Vietnamese UI. Storefront and its BFF remain placeholders. Legacy business modules have not been migrated.
 
 `infra/compose/compose.yml` provisions PostgreSQL and Redis for IDE-based development. `compose.local.yml` includes the infrastructure and is reserved for future containerized application services. See [local infrastructure](../../infra/README.md). OpenAPI specifications live in `contracts/openapi/`; events remain reserved for future schemas.
 
-## Target direction (not implemented)
+## Target direction and implemented foundations
 
 The target is an Ecommerce modular monolith with separate Identity, Notification and Media capabilities, Backoffice and Storefront frontends, and an approved Backoffice BFF/API Gateway direction. Storefront BFF remains deferred.
 
-[ADR-0001](adr/0001-backoffice-bff-as-api-gateway.md) approves Spring Cloud Gateway (WebFlux) as the Backoffice BFF, with OAuth2/OIDC confidential-client login and Redis-backed sessions. The BFF is **not implemented**. Other ownership, HTTP/event contracts, data boundaries and deployment decisions need further evidence.
+[ADR-0001](adr/0001-backoffice-bff-as-api-gateway.md) approves Spring Cloud Gateway (WebFlux) as the Backoffice BFF, with OAuth2/OIDC confidential-client login and Redis-backed sessions. Issue #14 implements this browser boundary with no refresh-token support and local BFF logout; Identity SSO may remain active. The [browser contract](../../contracts/openapi/backoffice-bff.yaml) defines session, CSRF and logout. Business modules and production deployment remain future work.
 
 ## Ecommerce package organization
 

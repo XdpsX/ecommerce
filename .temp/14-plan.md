@@ -1,16 +1,16 @@
-﻿# Issue #14 — Backoffice and BFF foundation plan
+# Issue #14 — Backoffice and BFF foundation plan
 
-Status: Scope expanded by user on 2026-11-07 to include BFF in this issue. Existing G1 refinements remain approved. Expanded implementation steps and proposed browser/lifecycle decisions below await approval; this task updates the issue and plan only.
+Status: Expanded implementation approved on 2026-11-07. BFF is included in #14. Decisions: no refresh; strict access-token expiry with zero additional skew; local BFF logout only; Vite 3000/BFF 8081; mandatory Redis client/session restart and logout verification. No commits, pushes or PRs authorized.
 Issue: https://github.com/XdpsX/ecommerce/issues/14
 Base: `phase/1-core-services-foundation` (not the outdated `phase/1`).
 
 ## Scope and current evidence
 
-Deliver one coherent authentication foundation across `web/backoffice`, `services/backoffice-bff`, browser OpenAPI contract, scoped configuration/docs and CI. The earlier decision to create a separate BFF CR is superseded. Do not create another issue, change branches, commit, push, open a PR or implement code in this planning task.
+Deliver one coherent authentication foundation across `web/backoffice`, `services/backoffice-bff`, browser OpenAPI contract, scoped configuration/docs and CI. The earlier decision to create a separate BFF CR is superseded. Do not create another issue, change branches, commit, push or open a PR without separate authorization.
 
 Preserve G1: temporary Dashboard at `/` with no fake metrics/business API, responsive shell, JSON shared/feature English-Vietnamese namespaces, language persistence/fallback/html.lang, config and separate providers composed by AppProvider, layout/components, development-only Query/Router Devtools, validated Problem Details and return-path helpers. `/` becomes protected in the completed implementation. Guards belong in `app/guards`, not the router directory. Keep the small footer inline and stable QueryClient/router lifetime.
 
-Current evidence:
+Pre-implementation evidence (historical G1 baseline):
 
 | Source | Observed behavior / implication |
 | --- | --- |
@@ -34,33 +34,31 @@ Browser → BFF: same-origin cookie-authenticated requests and CSRF. BFF → Ide
 
 Identity owns administrators/credentials/grants/entitlements and signing keys. BFF owns Redis browser sessions and session-bound authorized-client state. Browser receives minimal subject/session information and a CSRF token, never OAuth tokens, secrets or serialized authorized clients. No username/roles/permissions are assumed from current UserInfo.
 
-Use Spring Boot 4.1.2 / Java 25 if dependency resolution confirms compatibility; select an exact GA Spring Cloud BOM from the supported 2025.1.x line (4.1 support starts at 2025.1.2 per official matrix), verify and pin it before coding. Do not disable the compatibility verifier or upgrade unrelated services to force compatibility. Use Gateway Server WebFlux, OAuth2 client and reactive Redis Spring Session; no MVC/JDBC/Flyway dependency in BFF.
+Selected and verified: Java 25, Spring Boot 4.1.2 and Spring Cloud 2025.1.4 (Gateway 5.0.4), with the compatibility verifier enabled. Do not disable the compatibility verifier or upgrade unrelated services to force compatibility. Use Gateway Server WebFlux, OAuth2 client and reactive Redis Spring Session; no MVC/JDBC/Flyway dependency in BFF.
 
 Keep OAuth authorized-client state bound to the Redis-backed WebSession using a supported repository/manager integration. Do not assume the default in-memory authorized-client service persists just because WebSession uses Redis. Prove relay works after BFF restart with the same session, and logout/expiry removes access to the authorized client. Missing client state fails closed into reauthentication; no custom global principal-keyed token store or shared DB. If framework integration cannot satisfy this directly, report the concrete gap before introducing a custom token store.
 
-## Browser contract — proposed, not yet approved
+## Frozen browser contract — approved v1.0.0
 
-ADR/scope approval does not approve endpoint details. First implementation milestone is a reviewed checked-in `contracts/openapi/backoffice-bff.yaml` referencing `common/problem.yaml`. Freeze it before generating client or wiring session guards; code and tests must implement the approved revision. BFF is now the producer in the same issue, not an external CR dependency.
+The approved endpoint decisions are frozen in checked-in `contracts/openapi/backoffice-bff.yaml` v1.0.0 referencing `common/problem.yaml`. This freeze preceded contract-dependent frontend integration; code, generation and tests use that revision. BFF is now the producer in the same issue, not an external CR dependency.
 
-| Boundary | Proposed behavior |
+| Boundary | Approved behavior |
 | --- | --- |
 | `GET /bff/session` | 200 JSON `{ "subject": "<administrator UUID>" }`; 401 Problem `UNAUTHENTICATED` when missing/expired. No anonymous 200. No-store. Never create an authenticated result from frontend state alone. |
 | `GET /bff/csrf` | 200 JSON `{ "token": "...", "headerName": "X-CSRF-TOKEN" }`, no-store; materialize the framework token, including before login when needed for logout/anonymous CSRF handling. Keep token in memory; renew after login/session rotation. |
 | Login | Top-level navigation to `/oauth2/authorization/identity`. BFF exchanges code with secret and PKCE S256 and validates OIDC/state/nonce. Callback `/login/oauth2/code/identity`. No password grant or credential form in FE. |
 | Return destination | Default `/`; allow only validated app-local paths, excluding login/protocol endpoints to prevent loops. Validate normalized output on server as well as FE. Store return target in session; do not allow arbitrary redirect URLs. |
-| `POST /bff/logout` | CSRF-protected; 204 after invalidating local session, cookie and client state; idempotent for absent session with a valid CSRF token. Missing/invalid CSRF yields 403 `CSRF_INVALID`. No automatic POST retry. Identity SSO choice below remains to be approved. |
+| `POST /bff/logout` | CSRF-protected; 204 after invalidating local session, cookie and client state; idempotent for absent session with a valid CSRF token. Missing/invalid CSRF yields 403 `CSRF_INVALID`. No automatic POST retry. Identity SSO may remain active; local-only logout is approved. |
 | REST errors | Shared Problem Details and actual status; no-store for BFF-owned security/session responses. Session 401 means unauthenticated. Permission 403 retains session. CSRF code is distinct from permission denial. Unknown codes/malformed JSON/network errors use safe localized fallback. No HTML login redirect from XHR endpoints. |
 | OAuth errors | Keep OAuth/OIDC protocol responses and navigation handling; expose safe login failure UI without raw provider diagnostics. REST advice must not rewrite protocol endpoints. |
 
 API generation: existing Orval consumes only the approved repository spec, no live URL or remote refs. Emit consumed client/types under `shared/api/generated`, use one shared Axios mutator for credentials/CSRF/errors/cancellation, and avoid duplicate method wrappers. Generate twice and verify identical output plus build. No fabricated endpoint/spec or handwritten DTO fallback to bypass approval.
 
-## Session, expiry and logout proposals
+## Selected session, expiry and local logout behavior
 
-Proposed minimal first slice: keep Identity refresh grant disabled; do not silently enable rotating refresh tokens. Reauthenticate once the server-owned access token expires (with agreed skew); align usable BFF authentication lifetime to token validity rather than presenting a long-lived authenticated session that cannot relay. A 30-minute Redis idle TTL can be an upper bound for anonymous/in-progress sessions, not a promise of 30-minute authentication with a five-minute token. Exact TTL/skew need approval. Redis outage fails closed with safe 503/unavailable, never fake success.
+Approved first slice: no refresh-token support. Reauthentication is required when the server-owned access token can no longer be used. Usable expiry is the earlier of the token response expiry and JWT exp, with zero additional skew: strictly before that instant the token is usable; at or after it the next session/API request invalidates authentication and returns 401. Redis idle timeout is 30 minutes and cannot extend this bound. Missing authorized-client state fails closed. Redis outage returns safe 503/unavailable. Controlled-clock integration tests verify the exact bound against the actual Redis-persisted authorized client.
 
-If seamless refresh is required, approve it explicitly before implementation: enable the existing Identity client grant through its operator path, keep refresh tokens server-side and serialize concurrent refresh per session to avoid rotation/replay races. Tests must prove this behavior. It is not the default in this plan.
-
-Proposed logout baseline: local BFF logout only, clearly document that Identity SSO can make subsequent sign-in automatic. If acceptance requires Identity SSO logout/credential prompt, agree an end-session browser sequence and callback/state allowlist first; the 204 local endpoint alone does not terminate Identity SSO. Do not add a browser-visible ID-token handoff by accident. Logout also does not promise immediate revocation of already-issued JWTs accepted by downstream servers. These are approval decisions, not hidden implementation assumptions.
+Approved logout: local BFF logout only. Framework security/CSRF cleanup precedes invalidating the complete Redis session, then 204 is emitted. Old-cookie reuse is rejected. Identity SSO may remain active and subsequent login may be automatic. Logout does not promise immediate revocation of previously issued JWTs at downstream servers. Refresh or Identity end-session integration would require separate approval and is outside this implementation.
 
 | Event | FE result / security behavior |
 | --- | --- |
@@ -123,16 +121,28 @@ Frontend MSW tests remain deterministic without running services. Backend IT use
 
 Real browser checks: local/deployed origin/callback correctness, cookies/CSRF, refresh or reauthentication policy, both guards, logout failure/reconciliation, approved SSO behavior, token absence from browser API/storage, and responsive/keyboard behavior in both languages. E2E automation belongs in the separate E2E repository when available; otherwise record manual evidence and the missing automation explicitly. No new E2E repository is created here.
 
-## Decisions still requiring approval
+## Approval record and implementation gates
 
-1. Expanded implementation plan and browser contract above (scope expansion itself is already authorized). Freeze exact endpoint/status/CSRF/header/return-path details before wiring.
-2. Minimal no-refresh reauthentication at access-token expiry versus seamless rotating refresh; exact Redis idle TTL/skew. Recommended first slice is no refresh to preserve current Identity registration defaults.
-3. Local BFF-only logout versus Identity SSO logout. The former is minimal but permits subsequent automatic SSO login; choose explicitly before finalizing acceptance.
-4. Local 8081/Vite proxy/callback proposal and production public-origin/trusted-ingress configuration. Deployment-specific secret/host values stay outside Git.
+1. Expanded plan approved by user. Browser OpenAPI v1.0.0 is frozen in contracts/openapi/backoffice-bff.yaml before contract-dependent FE work.
+2. Approved no-refresh implementation: usable token must expire strictly after now, no skew extension; Redis 30-minute idle upper bound does not extend token validity.
+3. Approved local BFF-only logout; Identity SSO may remain active and subsequent login may be automatic.
+4. Approved local 8081/Vite 3000 arrangement, verified locally with real browser callback/cookie/CSRF checks and HTTP header-boundary integration tests. Boot 4.1.2 / Cloud 2025.1.4 pinned and Maven dependency resolution succeeds. Deployment secrets/hosts stay outside Git.
 
-The Redis session-bound authorized-client choice and release compatibility are implementation verification gates. Report a demonstrated gap before adding a custom store or changing architecture. No ADR changes, speculative business API, new issue/PR or BFF implementation is authorized by this planning-only update.
+The Redis session-bound authorized-client choice and release compatibility are implementation verification gates. Report a demonstrated gap before adding a custom store or changing architecture. No ADR changes, speculative business API, new issue/PR or architecture changes are authorized. The user approved BFF implementation within #14.
 
 ## Official technical references
 
 - Spring Cloud compatibility matrix: https://spring.io/projects/spring-cloud/ (Boot 4.1 supported by 2025.1.x starting at 2025.1.2; pin a verified GA patch during implementation).
 - Reactive OAuth2 authorized-client repository/manager lifecycle: https://docs.spring.io/spring-security/reference/reactive/oauth2/client/core.html (do not confuse WebSession persistence with an in-memory authorized-client service).
+
+## Implementation verification record
+
+G2a → G2b → G2c → G3 local work is complete. The existing G1 source is preserved. Branch remains `feat/14-backoffice-foundation-draft`, HEAD `7dbc5c433a705b92717891ade193e61032aa20d6`; no commits/pushes/PRs/merges were made.
+
+- Frontend: frozen install with pnpm 12.9.1, 34 tests, lint and production build pass; generated output is deterministic across 13 files.
+- BFF Maven verify: 3 unit tests + 2 integration tests pass. Real Redis authorized-client persistence, BFF restart survival, exact expiry, no refresh, logout invalidation, relay boundaries and outage handling are covered.
+- Identity Maven verify: 16 unit tests + 28 integration tests pass. A focused saved-authorization-request fix prevents an automatic favicon request from replacing the login continuation; regression test included.
+- Actual local browser at Vite 3000 / BFF 8081 passes real Identity login/callback, protected dashboard, cookie/CSRF checks, Vietnamese mobile layout and local logout. No production Ecommerce endpoint was introduced.
+- Hosted CI and production HTTPS ingress remain unexecuted. Default frontend format check reports CRLF in 10 unchanged baseline files; changed/new frontend files pass, and the full check with end-of-line auto passes. No unrelated formatting sweep was made.
+
+Detailed reading guide, commands and limitations: `.agent-work/implementations/14.md`. Logs and browser evidence are ignored local artifacts under `.agent-work/`. No remaining architectural blocker requires changing the approved architecture.

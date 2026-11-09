@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: backoffice-bff
+  data:
+    redis:
+      host: ${BFF_REDIS_HOST:localhost}
+      port: ${BFF_REDIS_PORT:6379}
+      password: ${BFF_REDIS_PASSWORD}
+      connect-timeout: 2s
+      timeout: 2s
+  session:
+    timeout: 30m
+    redis:
+      namespace: backoffice:sessions
+  security:
+    oauth2:
+      client:
+        registration:
+          identity:
+            provider: identity
+            client-id: ${BFF_CLIENT_ID:backoffice-bff}
+            client-secret: ${BFF_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_basic
+            redirect-uri: "${BFF_PUBLIC_ORIGIN:https://localhost}/login/oauth2/code/identity"
+            scope: openid,profile,ecommerce.api
+        provider:
+          identity:
+            issuer-uri: ${IDENTITY_ISSUER:http://localhost:9000}
+server:
+  port: ${BFF_PORT:8081}
+  forward-headers-strategy: none
+bff:
+  public-origin: ${BFF_PUBLIC_ORIGIN:https://localhost}
+  ecommerce-uri: ${BFF_ECOMMERCE_URI:http://localhost:8080}
+  secure-cookie: true
+logging:
+  level:
+    org.springframework.security: INFO

@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 import jakarta.servlet.DispatcherType;
@@ -18,7 +19,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
@@ -57,6 +57,8 @@ import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import com.ecommerce.identity.adapter.web.ApiProblems;
 import com.ecommerce.identity.admin.application.service.AdministratorDirectory;
@@ -144,11 +146,24 @@ public class AuthorizationServerConfiguration {
     }
 
     @Bean
-    RequestCache identityRequestCache() {
+    RequestCache identityRequestCache(AuthorizationServerSettings settings) {
         HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
-        requestCache.setRequestMatcher(request ->
-                request.getDispatcherType() != DispatcherType.ERROR && !"/error".equals(request.getServletPath()));
+        // Browser asset/error requests must not replace an in-progress OAuth login.
+        requestCache.setRequestMatcher(request -> request.getDispatcherType() == DispatcherType.REQUEST
+                && "GET".equals(request.getMethod())
+                && settings.getAuthorizationEndpoint().equals(request.getServletPath()));
         return requestCache;
+    }
+
+    @Bean(name = "localeResolver")
+    LocaleResolver identityLocaleResolver() {
+        var resolver = new SessionLocaleResolver();
+        resolver.setLocaleAttributeName(LoginLocaleFilter.LOCALE_SESSION_ATTRIBUTE);
+        resolver.setDefaultLocaleFunction(request -> {
+            Locale preference = LoginLocaleFilter.firstSupportedAcceptLanguage(request);
+            return preference == null ? Locale.ENGLISH : preference;
+        });
+        return resolver;
     }
 
     @Bean
@@ -176,7 +191,8 @@ public class AuthorizationServerConfiguration {
             RefreshTokenReplayAuthenticationProvider refreshProvider,
             AtomicAuthorizationCodeAuthenticationProvider authorizationCodeProvider,
             AuthorizationServerSettings settings,
-            RequestCache identityRequestCache)
+            RequestCache identityRequestCache,
+            LocaleResolver identityLocaleResolver)
             throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServer = new OAuth2AuthorizationServerConfigurer();
         http.securityMatcher(authorizationServer.getEndpointsMatcher())
@@ -199,6 +215,9 @@ public class AuthorizationServerConfiguration {
                                 identityRequestCache,
                                 new LoginUrlAuthenticationEntryPoint("/login")),
                         AuthorizationFilter.class)
+                .addFilterBefore(
+                        new LoginLocaleFilter(identityLocaleResolver, settings.getAuthorizationEndpoint()),
+                        AuthorizationRequestLoginFilter.class)
                 .addFilterBefore(new CurrentAdministratorFilter(subjects), AuthorizationFilter.class);
         return http.build();
     }
@@ -263,12 +282,23 @@ public class AuthorizationServerConfiguration {
     @Bean
     @Order(3)
     SecurityFilterChain applicationSecurityFilterChain(
-            HttpSecurity http, AdministratorSubjectResolver subjects, RequestCache identityRequestCache)
+            HttpSecurity http,
+            AdministratorSubjectResolver subjects,
+            RequestCache identityRequestCache,
+            AuthorizationServerSettings settings,
+            LocaleResolver identityLocaleResolver)
             throws Exception {
-        http.authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+        http.authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/login", "/login-assets/**")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
                 .requestCache(cache -> cache.requestCache(identityRequestCache))
-                .formLogin(Customizer.withDefaults());
-        http.addFilterBefore(new CurrentAdministratorFilter(subjects), AuthorizationFilter.class);
+                .formLogin(login -> login.loginPage("/login").permitAll());
+        http.addFilterBefore(
+                        new LoginLocaleFilter(identityLocaleResolver, settings.getAuthorizationEndpoint()),
+                        AuthorizationFilter.class)
+                .addFilterBefore(new CurrentAdministratorFilter(subjects), AuthorizationFilter.class);
         return http.build();
     }
 

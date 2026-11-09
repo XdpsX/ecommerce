@@ -14,7 +14,7 @@ export function RouterProvider({ initialPath }: RouterProviderProps) {
   return (
     <>
       <TanStackRouterProvider router={router} />
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && import.meta.env.MODE !== 'test' && (
         <>
           <ReactQueryDevtools initialIsOpen={false} />
           <TanStackRouterDevtools router={router} position="bottom-right" />
