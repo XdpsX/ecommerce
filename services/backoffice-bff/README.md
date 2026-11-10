@@ -2,6 +2,12 @@
 
 Backoffice browser entry point following [ADR-0001](../../docs/03-architecture/adr/0001-backoffice-bff-as-api-gateway.md): Gateway WebFlux, confidential OIDC code + PKCE S256, Redis Spring Session and server-side TokenRelay. Java 25, Boot 4.1.2 and Cloud 2025.1.4 are pinned; the [Spring compatibility matrix](https://spring.io/projects/spring-cloud/) supports Boot 4.1 on this release line. Do not disable its compatibility verifier.
 
+## Code organization
+
+Spring composition and route/security wiring live in root `config`. The approved [backend organization](../../docs/06-development/code-organization.md) places service-wide executable security components in `shared/security` and HTTP error handling in `shared/error`, without another domain/application/adapter tree inside `shared`. Session endpoints remain in `session/adapter/web`.
+
+Implemented: `BrowserBoundaryFilter`, `SessionExpiryFilter` and `LocaleAwareAuthorizationRequestResolver` live in `shared/security`; `RestErrorHandler` and `ApiProblems` live in `shared/error`. The browser boundary retains request sanitization, Origin checks, return-path validation and Redis error translation; expiry retains protected session/API checks; locale resolution retains PKCE. Global versus security-chain filter registration is unchanged. `session/adapter/web` remains the owner of session endpoints.
+
 ## Browser boundary
 
 The checked-in [OpenAPI contract](../../contracts/openapi/backoffice-bff.yaml) defines session, CSRF and local logout. OAuth navigation starts at `/oauth2/authorization/identity` and callbacks use `/login/oauth2/code/identity`. The browser may include `ui_locales=en` or `ui_locales=vi`; the BFF forwards only the first supported locale (including supported regional variants) to Identity while retaining PKCE parameters. `returnTo` is optional and omitted for the default `/`; non-default local paths are independently validated by the BFF. Only minimal subject data reaches the frontend. Tokens and client secrets stay on the server. The authorized client is stored in the same Redis-backed WebSession used by login, not an in-memory principal-keyed service. The relay manager reads that repository without refresh support.

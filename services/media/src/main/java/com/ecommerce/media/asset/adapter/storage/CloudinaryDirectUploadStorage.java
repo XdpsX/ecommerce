@@ -27,7 +27,7 @@ import com.ecommerce.media.asset.application.exception.StorageFailure;
 import com.ecommerce.media.asset.application.model.DirectUploadPolicy;
 import com.ecommerce.media.asset.application.model.TrustedProviderInspection;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage;
-import com.ecommerce.media.configuration.MediaProperties;
+import com.ecommerce.media.config.MediaProperties;
 
 @Component
 public class CloudinaryDirectUploadStorage implements DirectUploadStorage {

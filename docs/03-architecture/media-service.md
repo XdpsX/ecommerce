@@ -2,7 +2,7 @@
 
 Media is a standalone Spring MVC resource server. It owns image metadata, generated Cloudinary object identities, upload/deletion operation state and cleanup retry records in the `media` database. Identity owns user accounts, permissions and token issuance. Media does not read Identity tables; Ecommerce and future consumers store stable Media UUIDs only after defining their own reference rules.
 
-The `asset` feature groups its domain, application services, ports, models, exceptions and technical adapters. Service-wide security and HTTP problem handling live under root `adapter/web`; shared configuration remains under `configuration`.
+The `asset` feature groups its domain, application services, ports, models, exceptions and technical adapters. Spring properties and bean/security composition live under root `config`. Service-wide HTTP problem handling lives in `shared/error`. Asset adapters and business exceptions retain their feature owners. Media application services receive immutable image, lifecycle and direct-upload settings snapshots mapped from the bound service properties.
 
 ## API and access
 

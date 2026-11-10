@@ -25,7 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.*;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-import com.ecommerce.backoffice.configuration.BoundaryConfiguration;
+import com.ecommerce.backoffice.shared.security.BrowserBoundaryFilter;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
@@ -350,12 +350,12 @@ class BffFlowIT {
 
     @Test
     void returnPathsCannotEscapeOrLoop() {
-        assertThat(BoundaryConfiguration.safeReturn("/a/..//evil.example")).isEqualTo("/");
-        assertThat(BoundaryConfiguration.safeReturn("//evil.example")).isEqualTo("/");
-        assertThat(BoundaryConfiguration.safeReturn("/oauth2/authorization/identity"))
+        assertThat(BrowserBoundaryFilter.safeReturn("/a/..//evil.example")).isEqualTo("/");
+        assertThat(BrowserBoundaryFilter.safeReturn("//evil.example")).isEqualTo("/");
+        assertThat(BrowserBoundaryFilter.safeReturn("/oauth2/authorization/identity"))
                 .isEqualTo("/");
-        assertThat(BoundaryConfiguration.safeReturn("/orders?state=pending")).isEqualTo("/orders?state=pending");
-        assertThat(BoundaryConfiguration.safeReturn("/orders?state=pending%20review#section%201"))
+        assertThat(BrowserBoundaryFilter.safeReturn("/orders?state=pending")).isEqualTo("/orders?state=pending");
+        assertThat(BrowserBoundaryFilter.safeReturn("/orders?state=pending%20review#section%201"))
                 .isEqualTo("/orders?state=pending%20review#section%201");
     }
 
