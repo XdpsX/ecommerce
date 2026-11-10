@@ -1,4 +1,4 @@
-package com.ecommerce.media.adapter.web;
+package com.ecommerce.media.shared.error;
 
 import java.net.URI;
 import java.util.Locale;

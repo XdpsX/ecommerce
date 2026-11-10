@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -18,19 +19,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.ecommerce.media.asset.application.model.DirectUploadSettings;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage.DiscoveryPage;
 import com.ecommerce.media.asset.application.port.MediaUploadIntentRepository;
 import com.ecommerce.media.asset.domain.MediaUploadIntent;
 import com.ecommerce.media.asset.domain.UploadIntentState;
-import com.ecommerce.media.configuration.MediaProperties;
 
 class MediaUploadRecoveryServiceTest {
     private static final Instant NOW = Instant.parse("2026-11-06T00:00:00Z");
 
     private MediaUploadIntentRepository repository;
     private DirectUploadStorage storage;
-    private MediaProperties properties;
+    private DirectUploadSettings settings;
     private MediaUploadIntent intent;
     private MediaUploadRecoveryService service;
 
@@ -38,7 +39,7 @@ class MediaUploadRecoveryServiceTest {
     void setUp() {
         repository = mock(MediaUploadIntentRepository.class);
         storage = mock(DirectUploadStorage.class);
-        properties = new MediaProperties();
+        settings = directUploadSettings(3);
         intent = intent(NOW);
         when(repository.claimDue(any(), any(), any(), anyInt())).thenReturn(List.of(intent));
         when(repository.reserveProviderCall(any(), anyBoolean(), anyInt(), anyInt()))
@@ -49,12 +50,7 @@ class MediaUploadRecoveryServiceTest {
                 .thenReturn(List.of());
         when(repository.issuanceEnabled()).thenReturn(true);
         when(repository.cleanupBacklog()).thenReturn(0L);
-        service = new MediaUploadRecoveryService(
-                repository,
-                mock(MediaUploadIntentService.class),
-                storage,
-                properties,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+        service = createService(settings);
     }
 
     @Test
@@ -75,7 +71,8 @@ class MediaUploadRecoveryServiceTest {
 
     @Test
     void schedulesPageBudgetContinuationImmediately() {
-        properties.getDirectUpload().setDiscoveryPagesPerClaim(1);
+        settings = directUploadSettings(1);
+        service = createService(settings);
 
         service.runBatch();
 
@@ -89,6 +86,42 @@ class MediaUploadRecoveryServiceTest {
                         nextDue.capture(),
                         org.mockito.ArgumentMatchers.eq(NOW));
         assertThat(nextDue.getValue()).isEqualTo(NOW);
+    }
+
+    private MediaUploadRecoveryService createService(DirectUploadSettings settings) {
+        return new MediaUploadRecoveryService(
+                repository, mock(MediaUploadIntentService.class), storage, settings, Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    private static DirectUploadSettings directUploadSettings(int discoveryPagesPerClaim) {
+        return new DirectUploadSettings(
+                true,
+                true,
+                false,
+                false,
+                "",
+                "ecommerce-media",
+                10,
+                5_242_880,
+                52_428_800,
+                100,
+                1_000,
+                20,
+                200,
+                Duration.ofSeconds(3),
+                Duration.ofSeconds(10),
+                Duration.ofMinutes(15),
+                120,
+                30,
+                discoveryPagesPerClaim,
+                100,
+                10,
+                10,
+                Duration.ofMinutes(1),
+                Duration.ofMinutes(2),
+                Duration.ofHours(1),
+                200,
+                Duration.ofHours(24));
     }
 
     private static MediaUploadIntent intent(Instant now) {

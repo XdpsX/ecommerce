@@ -1,4 +1,4 @@
-package com.ecommerce.media.configuration;
+package com.ecommerce.media.config;
 
 import java.time.Duration;
 

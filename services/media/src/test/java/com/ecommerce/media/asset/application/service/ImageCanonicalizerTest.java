@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import com.ecommerce.media.asset.application.exception.MediaException;
 import com.ecommerce.media.asset.application.model.CanonicalImage;
-import com.ecommerce.media.configuration.MediaProperties;
+import com.ecommerce.media.asset.application.model.ImagePolicy;
 
 class ImageCanonicalizerTest {
     @Test
@@ -22,7 +22,8 @@ class ImageCanonicalizerTest {
         ByteArrayOutputStream source = new ByteArrayOutputStream();
         ImageIO.write(new BufferedImage(3, 2, BufferedImage.TYPE_INT_ARGB), "png", source);
         source.write("EXIF-AND-OTHER-TRAILER".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
-        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(new MediaProperties(), new Semaphore(1));
+        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(
+                new ImagePolicy(5 * 1024 * 1024, 4 * 1024 * 1024, 20_000_000, 10_000), new Semaphore(1));
 
         CanonicalImage image = canonicalizer.canonicalize(new ByteArrayInputStream(source.toByteArray()));
 
@@ -36,7 +37,8 @@ class ImageCanonicalizerTest {
 
     @Test
     void rejectsUnsupportedSignaturesBeforeInvokingAnImageDecoder() {
-        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(new MediaProperties(), new Semaphore(1));
+        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(
+                new ImagePolicy(5 * 1024 * 1024, 4 * 1024 * 1024, 20_000_000, 10_000), new Semaphore(1));
 
         assertThatThrownBy(() -> canonicalizer.canonicalize(new ByteArrayInputStream("not an image".getBytes())))
                 .isInstanceOf(MediaException.class)
@@ -46,9 +48,8 @@ class ImageCanonicalizerTest {
 
     @Test
     void boundsBytesReadFromTheMultipartStream() {
-        MediaProperties properties = new MediaProperties();
-        properties.setMaxInputBytes(16);
-        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(properties, new Semaphore(1));
+        ImageCanonicalizer canonicalizer =
+                new ImageCanonicalizer(new ImagePolicy(16, 4 * 1024 * 1024, 20_000_000, 10_000), new Semaphore(1));
         InputStream oversized = new ByteArrayInputStream(new byte[17]);
 
         assertThatThrownBy(() -> canonicalizer.canonicalize(oversized))
@@ -61,9 +62,8 @@ class ImageCanonicalizerTest {
     void rejectsImagesThatExceedThePixelBudgetBeforeDecodingPixels() throws Exception {
         ByteArrayOutputStream source = new ByteArrayOutputStream();
         ImageIO.write(new BufferedImage(4, 4, BufferedImage.TYPE_INT_RGB), "png", source);
-        MediaProperties properties = new MediaProperties();
-        properties.setMaxPixels(8);
-        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(properties, new Semaphore(1));
+        ImageCanonicalizer canonicalizer =
+                new ImageCanonicalizer(new ImagePolicy(5 * 1024 * 1024, 4 * 1024 * 1024, 8, 10_000), new Semaphore(1));
 
         assertThatThrownBy(() -> canonicalizer.canonicalize(new ByteArrayInputStream(source.toByteArray())))
                 .isInstanceOf(MediaException.class)
@@ -90,7 +90,8 @@ class ImageCanonicalizerTest {
         withExif.write(exif);
         withExif.write(original, 2, original.length - 2);
 
-        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(new MediaProperties(), new Semaphore(1));
+        ImageCanonicalizer canonicalizer = new ImageCanonicalizer(
+                new ImagePolicy(5 * 1024 * 1024, 4 * 1024 * 1024, 20_000_000, 10_000), new Semaphore(1));
         CanonicalImage image = canonicalizer.canonicalize(new ByteArrayInputStream(withExif.toByteArray()));
 
         assertThat(image.mediaType()).isEqualTo("image/jpeg");

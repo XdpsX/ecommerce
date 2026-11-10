@@ -23,24 +23,24 @@ import org.springframework.stereotype.Component;
 
 import com.ecommerce.media.asset.application.exception.MediaException;
 import com.ecommerce.media.asset.application.model.CanonicalImage;
-import com.ecommerce.media.configuration.MediaProperties;
+import com.ecommerce.media.asset.application.model.ImagePolicy;
 
 @Component
 public class ImageCanonicalizer {
-    private final MediaProperties properties;
+    private final ImagePolicy policy;
     private final Semaphore permits;
 
-    public ImageCanonicalizer(MediaProperties properties, Semaphore imageDecodePermits) {
-        this.properties = properties;
+    public ImageCanonicalizer(ImagePolicy policy, Semaphore imageDecodePermits) {
+        this.policy = policy;
         this.permits = imageDecodePermits;
     }
 
     public CanonicalImage canonicalize(InputStream input) throws IOException {
-        byte[] source = input.readNBytes(properties.getMaxInputBytes() + 1);
+        byte[] source = input.readNBytes(policy.maxInputBytes() + 1);
         if (source.length == 0) {
             throw MediaException.invalidImage("The uploaded file is empty.");
         }
-        if (source.length > properties.getMaxInputBytes()) {
+        if (source.length > policy.maxInputBytes()) {
             throw MediaException.tooLarge();
         }
         String format = sniffFormat(source);
@@ -74,9 +74,9 @@ public class ImageCanonicalizer {
                 int height = reader.getHeight(0);
                 if (width < 1
                         || height < 1
-                        || width > properties.getMaxSide()
-                        || height > properties.getMaxSide()
-                        || (long) width * height > properties.getMaxPixels()) {
+                        || width > policy.maxSide()
+                        || height > policy.maxSide()
+                        || (long) width * height > policy.maxPixels()) {
                     throw MediaException.invalidImage("The image dimensions exceed the configured limit.");
                 }
                 BufferedImage decoded = reader.read(0);
@@ -121,7 +121,7 @@ public class ImageCanonicalizer {
         }
         ImageWriter writer = writers.next();
         try (ImageOutputStream imageOutput =
-                ImageIO.createImageOutputStream(new BoundedOutputStream(output, properties.getMaxOutputBytes()))) {
+                ImageIO.createImageOutputStream(new BoundedOutputStream(output, policy.maxOutputBytes()))) {
             writer.setOutput(imageOutput);
             ImageWriteParam params = writer.getDefaultWriteParam();
             if (format.equals("jpeg") && params.canWriteCompressed()) {

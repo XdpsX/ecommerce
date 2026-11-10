@@ -52,7 +52,6 @@ import com.ecommerce.media.asset.application.port.DirectUploadStorage.Discovered
 import com.ecommerce.media.asset.application.port.DirectUploadStorage.DiscoveryPage;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage.SignedUpload;
 import com.ecommerce.media.asset.application.service.MediaUploadRecoveryService;
-import com.ecommerce.media.configuration.MediaProperties;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -62,6 +61,8 @@ import tools.jackson.databind.json.JsonMapper;
         properties = {
             "media.cleanup.enabled=false",
             "media.direct-upload.enabled=true",
+            "media.direct-upload.batch-deadline=PT2S",
+            "media.direct-upload.inspection-timeout=PT1S",
             "media.direct-upload.reconcile-interval=PT1H",
             "CLOUDINARY_CLOUD_NAME=test-cloud",
             "CLOUDINARY_API_KEY=test-key",
@@ -95,9 +96,6 @@ class MediaUploadIntentApiIT {
     PlatformTransactionManager transactionManager;
 
     @Autowired
-    MediaProperties properties;
-
-    @Autowired
     JsonMapper json;
 
     @BeforeEach
@@ -108,8 +106,6 @@ class MediaUploadIntentApiIT {
         jdbc.update("DELETE FROM media_upload_quota_counters");
         jdbc.update("DELETE FROM media_upload_provider_hourly_budget");
         jdbc.update("UPDATE media_upload_controls SET control_value = 'true' WHERE control_key = 'issuance_enabled'");
-        properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(10));
-        properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(3));
         reset(storage);
         when(storage.sign(any()))
                 .thenReturn(new SignedUpload(
@@ -257,8 +253,6 @@ class MediaUploadIntentApiIT {
     void rowLockWaitConsumesBatchDeadlineAndPreventsLateProviderInspection() throws Exception {
         UUID owner = UUID.randomUUID();
         UUID intent = UUID.fromString(create(owner));
-        properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(2));
-        properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(1));
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -291,8 +285,6 @@ class MediaUploadIntentApiIT {
             releaseLock.countDown();
             holder.get(5, TimeUnit.SECONDS);
             executor.shutdownNow();
-            properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(10));
-            properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(3));
         }
     }
 
@@ -300,8 +292,6 @@ class MediaUploadIntentApiIT {
     void finalizationRowLockWaitConsumesBatchDeadlineAndDoesNotReturnReadyLate() throws Exception {
         UUID owner = UUID.randomUUID();
         UUID intent = UUID.fromString(create(owner));
-        properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(2));
-        properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(1));
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -340,8 +330,6 @@ class MediaUploadIntentApiIT {
             releaseLock.countDown();
             if (holder.get() != null) holder.get().get(5, TimeUnit.SECONDS);
             executor.shutdownNow();
-            properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(10));
-            properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(3));
         }
     }
 
@@ -349,8 +337,6 @@ class MediaUploadIntentApiIT {
     void providerFailureRetryLockWaitConsumesBatchDeadlineAndKeepsLease() throws Exception {
         UUID owner = UUID.randomUUID();
         UUID intent = UUID.fromString(create(owner));
-        properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(2));
-        properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(1));
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -392,8 +378,6 @@ class MediaUploadIntentApiIT {
             releaseLock.countDown();
             if (holder.get() != null) holder.get().get(5, TimeUnit.SECONDS);
             executor.shutdownNow();
-            properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(10));
-            properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(3));
         }
     }
 
@@ -401,8 +385,6 @@ class MediaUploadIntentApiIT {
     void rejectionLockWaitConsumesBatchDeadlineAndKeepsLease() throws Exception {
         UUID owner = UUID.randomUUID();
         UUID intent = UUID.fromString(create(owner));
-        properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(2));
-        properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(1));
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch releaseLock = new CountDownLatch(1);
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -460,8 +442,6 @@ class MediaUploadIntentApiIT {
             releaseLock.countDown();
             if (holder.get() != null) holder.get().get(5, TimeUnit.SECONDS);
             executor.shutdownNow();
-            properties.getDirectUpload().setBatchDeadline(Duration.ofSeconds(10));
-            properties.getDirectUpload().setInspectionTimeout(Duration.ofSeconds(3));
         }
     }
 

@@ -18,6 +18,8 @@ import com.ecommerce.media.asset.application.exception.MediaPersistenceLockTimeo
 import com.ecommerce.media.asset.application.model.DirectUploadBatch;
 import com.ecommerce.media.asset.application.model.DirectUploadInstruction;
 import com.ecommerce.media.asset.application.model.DirectUploadPolicy;
+import com.ecommerce.media.asset.application.model.DirectUploadSettings;
+import com.ecommerce.media.asset.application.model.ImagePolicy;
 import com.ecommerce.media.asset.application.model.TrustedProviderInspection;
 import com.ecommerce.media.asset.application.model.UploadIntentBatchResult;
 import com.ecommerce.media.asset.application.model.UploadIntentDeclaration;
@@ -32,7 +34,6 @@ import com.ecommerce.media.asset.domain.AssetStatus;
 import com.ecommerce.media.asset.domain.MediaAsset;
 import com.ecommerce.media.asset.domain.MediaUploadIntent;
 import com.ecommerce.media.asset.domain.UploadIntentState;
-import com.ecommerce.media.configuration.MediaProperties;
 
 @Service
 public class MediaUploadIntentService {
@@ -44,31 +45,32 @@ public class MediaUploadIntentService {
     private final MediaUploadIntentRepository repository;
     private final MediaAssetRepository assets;
     private final DirectUploadStorage storage;
-    private final MediaProperties mediaProperties;
+    private final DirectUploadSettings settings;
+    private final ImagePolicy imagePolicy;
     private final Clock clock;
 
     public MediaUploadIntentService(
             MediaUploadIntentRepository repository,
             MediaAssetRepository assets,
             DirectUploadStorage storage,
-            MediaProperties mediaProperties,
+            DirectUploadSettings settings,
+            ImagePolicy imagePolicy,
             Clock mediaClock) {
         this.repository = repository;
         this.assets = assets;
         this.storage = storage;
-        this.mediaProperties = mediaProperties;
+        this.settings = settings;
+        this.imagePolicy = imagePolicy;
         this.clock = mediaClock;
     }
 
     public DirectUploadBatch createBatch(UUID ownerId, List<UploadIntentDeclaration> declarations) {
-        MediaProperties.DirectUpload settings = settings();
         requireFeatureEnabled(settings);
         requireIssuanceEnabled(settings);
         validateDeclarations(declarations, settings);
         Instant now = clock.instant();
-        Instant expiresAt = now.plus(settings.getIntentTtl());
-        String root =
-                normalizedFolder(mediaProperties.getStorage().getCloudinary().getFolder());
+        Instant expiresAt = now.plus(settings.intentTtl());
+        String root = normalizedFolder(settings.assetFolder());
         if (root.length() + 1 + "direct/".length() + 36 > 255
                 || root.contains("//")
                 || List.of(root.split("/")).contains("..")) {
@@ -108,8 +110,7 @@ public class MediaUploadIntentService {
                     null,
                     0,
                     now.plus(min(
-                            settings.getReconcileInterval(),
-                            settings.getIntentTtl().dividedBy(2))),
+                            settings.reconcileInterval(), settings.intentTtl().dividedBy(2))),
                     now.plus(Duration.ofHours(1)),
                     null,
                     "image",
@@ -120,15 +121,15 @@ public class MediaUploadIntentService {
         repository.createBatch(
                 intents,
                 new QuotaLimits(
-                        settings.getPerPrincipalDailyIntents(),
-                        settings.getGlobalDailyIntents(),
-                        settings.getPerPrincipalActiveIntents(),
-                        settings.getGlobalActiveIntents(),
-                        settings.getIssuanceStopBacklog(),
-                        settings.getIssuanceStopOldestRecovery()),
+                        settings.perPrincipalDailyIntents(),
+                        settings.globalDailyIntents(),
+                        settings.perPrincipalActiveIntents(),
+                        settings.globalActiveIntents(),
+                        settings.issuanceStopBacklog(),
+                        settings.issuanceStopOldestRecovery()),
                 now);
 
-        String callback = settings.isWebhookEnabled() ? settings.getNotificationUrl() : "";
+        String callback = settings.webhookEnabled() ? settings.notificationUrl() : "";
         List<DirectUploadInstruction> instructions = new ArrayList<>(intents.size());
         try {
             for (int index = 0; index < intents.size(); index++) {
@@ -137,9 +138,7 @@ public class MediaUploadIntentService {
                         intent.id(),
                         intent.providerPublicId(),
                         intent.policyVersion(),
-                        Math.min(
-                                intent.declaredSizeBytes(),
-                                Math.min(settings.getMaxFileBytes(), MAX_POLICY_INPUT_BYTES)),
+                        Math.min(intent.declaredSizeBytes(), Math.min(settings.maxFileBytes(), MAX_POLICY_INPUT_BYTES)),
                         effectiveMaxSide(),
                         effectiveMaxPixels(),
                         intent.signedAt(),
@@ -162,9 +161,8 @@ public class MediaUploadIntentService {
 
     public UploadIntentBatchResult completeBatch(UUID ownerId, List<UUID> intentIds) {
         validateIds(intentIds);
-        MediaProperties.DirectUpload settings = settings();
         requireFeatureEnabled(settings);
-        long deadlineNanos = System.nanoTime() + settings.getBatchDeadline().toNanos();
+        long deadlineNanos = System.nanoTime() + settings.batchDeadline().toNanos();
         List<UploadIntentOutcome> outcomes = new ArrayList<>(intentIds.size());
         for (UUID id : intentIds) {
             long remainingNanos = deadlineNanos - System.nanoTime();
@@ -179,7 +177,7 @@ public class MediaUploadIntentService {
 
     public UploadIntentBatchResult getStatuses(UUID ownerId, List<UUID> intentIds) {
         validateIds(intentIds);
-        requireFeatureEnabled(settings());
+        requireFeatureEnabled(settings);
         List<UploadIntentOutcome> outcomes = intentIds.stream()
                 .map(id -> repository
                         .findOwned(ownerId, id)
@@ -193,8 +191,7 @@ public class MediaUploadIntentService {
         return repository.scheduleInspection(providerPublicId, clock.instant());
     }
 
-    private UploadIntentOutcome completeOne(
-            UUID ownerId, UUID id, MediaProperties.DirectUpload settings, long deadlineNanos) {
+    private UploadIntentOutcome completeOne(UUID ownerId, UUID id, DirectUploadSettings settings, long deadlineNanos) {
         var existing = repository.findOwned(ownerId, id);
         if (existing.isEmpty()) return outcome(id, Status.NOT_FOUND, null, null);
         MediaUploadIntent intent = existing.get();
@@ -207,7 +204,7 @@ public class MediaUploadIntentService {
         boolean claimed;
         try {
             claimed = repository.claimForCompletion(
-                    id, ownerId, lease, now, now.plus(settings.getLeaseDuration()), maxLockWait);
+                    id, ownerId, lease, now, now.plus(settings.leaseDuration()), maxLockWait);
         } catch (MediaPersistenceLockTimeoutException exception) {
             return outcome(id, Status.PENDING, null, ErrorCode.RETRYABLE);
         }
@@ -225,21 +222,17 @@ public class MediaUploadIntentService {
     }
 
     UploadIntentOutcome reconcilePending(
-            MediaUploadIntent intent, UUID lease, MediaProperties.DirectUpload settings, Instant now) {
+            MediaUploadIntent intent, UUID lease, DirectUploadSettings settings, Instant now) {
         if (!intent.expiresAt().isAfter(now)) {
             repository.expire(intent.id(), lease, now, now);
             return outcome(intent.id(), Status.EXPIRED, null, null);
         }
-        long deadlineNanos = System.nanoTime() + settings.getBatchDeadline().toNanos();
+        long deadlineNanos = System.nanoTime() + settings.batchDeadline().toNanos();
         return inspectAndFinalize(intent, lease, settings, deadlineNanos, true);
     }
 
     private UploadIntentOutcome inspectAndFinalize(
-            MediaUploadIntent intent,
-            UUID lease,
-            MediaProperties.DirectUpload settings,
-            long deadlineNanos,
-            boolean recovery) {
+            MediaUploadIntent intent, UUID lease, DirectUploadSettings settings, long deadlineNanos, boolean recovery) {
         UUID id = intent.id();
         if (inspectionBudgetRemaining(deadlineNanos).isZero()) {
             retryWithinDeadline(id, lease, deadlineNanos, "BATCH_DEADLINE", retryAt(intent, clock.instant(), settings));
@@ -261,15 +254,15 @@ public class MediaUploadIntentService {
             if (!repository.reserveProviderCall(
                     hour,
                     recovery,
-                    settings.getProviderCallsPerHour(),
-                    settings.getReservedRecoveryCallsPerHour(),
+                    settings.providerCallsPerHour(),
+                    settings.reservedRecoveryCallsPerHour(),
                     budgetLockWait)) {
                 retryWithinDeadline(
                         id, lease, deadlineNanos, "PROVIDER_BUDGET_EXHAUSTED", hour.plus(Duration.ofHours(1)));
                 return outcome(id, Status.PENDING, null, ErrorCode.RETRYABLE);
             }
 
-            Duration inspectionTimeout = min(settings.getInspectionTimeout(), inspectionBudgetRemaining(deadlineNanos));
+            Duration inspectionTimeout = min(settings.inspectionTimeout(), inspectionBudgetRemaining(deadlineNanos));
             if (inspectionTimeout.isZero() || inspectionTimeout.isNegative()) {
                 retryWithinDeadline(
                         id, lease, deadlineNanos, "BATCH_DEADLINE", retryAt(intent, clock.instant(), settings));
@@ -362,7 +355,7 @@ public class MediaUploadIntentService {
     }
 
     ErrorCode validateInspection(
-            MediaUploadIntent intent, TrustedProviderInspection inspection, MediaProperties.DirectUpload settings) {
+            MediaUploadIntent intent, TrustedProviderInspection inspection, DirectUploadSettings settings) {
         if (inspection == null
                 || !intent.providerPublicId().equals(inspection.publicId())
                 || inspection.assetId() == null
@@ -376,8 +369,7 @@ public class MediaUploadIntentService {
                 || inspection.sourceBytes() < 1
                 || inspection.sourceBytes()
                         > Math.min(
-                                intent.declaredSizeBytes(),
-                                Math.min(settings.getMaxFileBytes(), MAX_POLICY_INPUT_BYTES))
+                                intent.declaredSizeBytes(), Math.min(settings.maxFileBytes(), MAX_POLICY_INPUT_BYTES))
                 || inspection.sourceWidth() == null
                 || inspection.sourceHeight() == null
                 || inspection.sourceWidth() < 1
@@ -398,7 +390,7 @@ public class MediaUploadIntentService {
         }
         if (inspection.finalBytes() == null
                 || inspection.finalBytes() < 1
-                || inspection.finalBytes() > Math.min(mediaProperties.getMaxOutputBytes(), MAX_POLICY_OUTPUT_BYTES)) {
+                || inspection.finalBytes() > Math.min(imagePolicy.maxOutputBytes(), MAX_POLICY_OUTPUT_BYTES)) {
             return ErrorCode.OUTPUT_LIMIT_EXCEEDED;
         }
         if (inspection.finalWidth() == null
@@ -436,9 +428,8 @@ public class MediaUploadIntentService {
                 .orElseGet(() -> outcome(intent.id(), Status.NOT_FOUND, null, null));
     }
 
-    private void validateDeclarations(
-            List<UploadIntentDeclaration> declarations, MediaProperties.DirectUpload settings) {
-        if (declarations == null || declarations.isEmpty() || declarations.size() > settings.getBatchSize()) {
+    private void validateDeclarations(List<UploadIntentDeclaration> declarations, DirectUploadSettings settings) {
+        if (declarations == null || declarations.isEmpty() || declarations.size() > settings.batchSize()) {
             throw new DirectUploadException(DirectUploadException.Kind.BAD_REQUEST);
         }
         Set<String> fileIds = new HashSet<>();
@@ -458,12 +449,12 @@ public class MediaUploadIntentService {
                     || declaration.sizeBytes() < 1
                     || declaration.sizeBytes()
                             > Math.min(
-                                    Math.min(settings.getMaxFileBytes(), MAX_POLICY_INPUT_BYTES),
-                                    mediaProperties.getMaxInputBytes())) {
+                                    Math.min(settings.maxFileBytes(), MAX_POLICY_INPUT_BYTES),
+                                    imagePolicy.maxInputBytes())) {
                 throw new DirectUploadException(DirectUploadException.Kind.BAD_REQUEST);
             }
             total = Math.addExact(total, declaration.sizeBytes());
-            if (total > settings.getMaxBatchBytes())
+            if (total > settings.maxBatchBytes())
                 throw new DirectUploadException(DirectUploadException.Kind.BAD_REQUEST);
         }
     }
@@ -471,38 +462,33 @@ public class MediaUploadIntentService {
     private void validateIds(List<UUID> ids) {
         if (ids == null
                 || ids.isEmpty()
-                || ids.size() > settings().getBatchSize()
+                || ids.size() > settings.batchSize()
                 || ids.stream().anyMatch(id -> id == null)
                 || new HashSet<>(ids).size() != ids.size()) {
             throw new DirectUploadException(DirectUploadException.Kind.BAD_REQUEST);
         }
     }
 
-    private void requireFeatureEnabled(MediaProperties.DirectUpload settings) {
-        if (!settings.isEnabled()) throw new DirectUploadException(DirectUploadException.Kind.DISABLED);
+    private void requireFeatureEnabled(DirectUploadSettings settings) {
+        if (!settings.enabled()) throw new DirectUploadException(DirectUploadException.Kind.DISABLED);
     }
 
-    private void requireIssuanceEnabled(MediaProperties.DirectUpload settings) {
-        if (!settings.isIssuanceEnabled() || !repository.issuanceEnabled()) {
+    private void requireIssuanceEnabled(DirectUploadSettings settings) {
+        if (!settings.issuanceEnabled() || !repository.issuanceEnabled()) {
             throw DirectUploadException.retry(Duration.ofMinutes(1));
         }
-        if (settings.isWebhookEnabled()
-                && (!settings.getNotificationUrl().startsWith("https://")
-                        || settings.getNotificationApiKey().isBlank())) {
+        if (settings.webhookEnabled()
+                && (!settings.notificationUrl().startsWith("https://") || !settings.webhookCredentialConfigured())) {
             throw new DirectUploadException(DirectUploadException.Kind.DISABLED);
         }
     }
 
-    private MediaProperties.DirectUpload settings() {
-        return mediaProperties.getDirectUpload();
-    }
-
     private int effectiveMaxSide() {
-        return Math.min(mediaProperties.getMaxSide(), MAX_POLICY_SIDE);
+        return Math.min(imagePolicy.maxSide(), MAX_POLICY_SIDE);
     }
 
     private long effectiveMaxPixels() {
-        return Math.min(mediaProperties.getMaxPixels(), MAX_POLICY_PIXELS);
+        return Math.min(imagePolicy.maxPixels(), MAX_POLICY_PIXELS);
     }
 
     private static String normalizedFolder(String folder) {
@@ -519,9 +505,9 @@ public class MediaUploadIntentService {
         return remaining <= 0 ? Duration.ZERO : Duration.ofNanos(remaining);
     }
 
-    private static Instant retryAt(MediaUploadIntent intent, Instant now, MediaProperties.DirectUpload settings) {
-        long baseSeconds = Math.min(settings.getRetryCap().toSeconds(), 60L << Math.min(10, intent.retryCount()));
-        long upperSeconds = Math.min(settings.getRetryCap().toSeconds(), baseSeconds + Math.max(1, baseSeconds / 2));
+    private static Instant retryAt(MediaUploadIntent intent, Instant now, DirectUploadSettings settings) {
+        long baseSeconds = Math.min(settings.retryCap().toSeconds(), 60L << Math.min(10, intent.retryCount()));
+        long upperSeconds = Math.min(settings.retryCap().toSeconds(), baseSeconds + Math.max(1, baseSeconds / 2));
         long delay = java.util.concurrent.ThreadLocalRandom.current()
                 .nextLong(Math.max(1, baseSeconds), Math.max(baseSeconds + 1, upperSeconds + 1));
         return now.plusSeconds(delay);

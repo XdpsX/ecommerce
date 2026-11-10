@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ecommerce.media.adapter.web.ApiProblems;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage;
 import com.ecommerce.media.asset.application.service.MediaUploadIntentService;
-import com.ecommerce.media.configuration.MediaProperties;
+import com.ecommerce.media.config.MediaProperties;
+import com.ecommerce.media.shared.error.ApiProblems;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;

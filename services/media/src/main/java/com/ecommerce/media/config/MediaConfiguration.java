@@ -1,4 +1,4 @@
-package com.ecommerce.media.configuration;
+package com.ecommerce.media.config;
 
 import java.time.Clock;
 import java.util.concurrent.Semaphore;
@@ -7,6 +7,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import com.ecommerce.media.asset.application.model.DirectUploadSettings;
+import com.ecommerce.media.asset.application.model.ImagePolicy;
+import com.ecommerce.media.asset.application.model.MediaLifecycleSettings;
 
 @Configuration
 @EnableConfigurationProperties(MediaProperties.class)
@@ -23,6 +27,59 @@ public class MediaConfiguration {
             throw new IllegalStateException("media.max-concurrent-decodes must be at least 1.");
         }
         return new Semaphore(properties.getMaxConcurrentDecodes());
+    }
+
+    @Bean
+    ImagePolicy imagePolicy(MediaProperties properties) {
+        return new ImagePolicy(
+                properties.getMaxInputBytes(),
+                properties.getMaxOutputBytes(),
+                properties.getMaxPixels(),
+                properties.getMaxSide());
+    }
+
+    @Bean
+    MediaLifecycleSettings mediaLifecycleSettings(MediaProperties properties) {
+        MediaProperties.Cleanup cleanup = properties.getCleanup();
+        return new MediaLifecycleSettings(
+                properties.getDownloadLinkTtl(),
+                cleanup.getAbandonAfter(),
+                cleanup.getBatchSize(),
+                cleanup.getLeaseDuration(),
+                cleanup.getRetryCap());
+    }
+
+    @Bean
+    DirectUploadSettings directUploadSettings(MediaProperties properties) {
+        MediaProperties.DirectUpload direct = properties.getDirectUpload();
+        return new DirectUploadSettings(
+                direct.isEnabled(),
+                direct.isIssuanceEnabled(),
+                direct.isWebhookEnabled(),
+                !blank(direct.getNotificationApiKey()),
+                direct.getNotificationUrl(),
+                properties.getStorage().getCloudinary().getFolder(),
+                direct.getBatchSize(),
+                direct.getMaxFileBytes(),
+                direct.getMaxBatchBytes(),
+                direct.getPerPrincipalDailyIntents(),
+                direct.getGlobalDailyIntents(),
+                direct.getPerPrincipalActiveIntents(),
+                direct.getGlobalActiveIntents(),
+                direct.getInspectionTimeout(),
+                direct.getBatchDeadline(),
+                direct.getIntentTtl(),
+                direct.getProviderCallsPerHour(),
+                direct.getReservedRecoveryCallsPerHour(),
+                direct.getDiscoveryPagesPerClaim(),
+                direct.getDiscoveryPageSize(),
+                direct.getDeletesPerClaim(),
+                direct.getReconcileBatchSize(),
+                direct.getReconcileInterval(),
+                direct.getLeaseDuration(),
+                direct.getRetryCap(),
+                direct.getIssuanceStopBacklog(),
+                direct.getIssuanceStopOldestRecovery());
     }
 
     @Bean

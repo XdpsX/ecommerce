@@ -1,4 +1,4 @@
-package com.ecommerce.media.adapter.web;
+package com.ecommerce.media.shared.error;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;

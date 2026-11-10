@@ -1,4 +1,4 @@
-package com.ecommerce.media.adapter.web;
+package com.ecommerce.media.config;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -32,8 +32,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
-import com.ecommerce.media.configuration.IdentityProperties;
-import com.ecommerce.media.configuration.MediaProperties;
+import com.ecommerce.media.shared.error.ApiProblems;
 
 @Configuration
 @EnableConfigurationProperties(IdentityProperties.class)
