@@ -7,6 +7,17 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   server: {
     port: 3000,
+    strictPort: true,
+    proxy: {
+      '/bff': { target: process.env.BFF_UPSTREAM ?? 'http://localhost:8081' },
+      '/oauth2': {
+        target: process.env.BFF_UPSTREAM ?? 'http://localhost:8081',
+      },
+      '/login/oauth2': {
+        target: process.env.BFF_UPSTREAM ?? 'http://localhost:8081',
+      },
+      '/api': { target: process.env.BFF_UPSTREAM ?? 'http://localhost:8081' },
+    },
   },
   plugins: [react(), tailwindcss()],
   resolve: {

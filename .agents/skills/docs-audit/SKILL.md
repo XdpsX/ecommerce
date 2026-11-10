@@ -5,7 +5,7 @@ description: Read-only documentation consistency audit for the Ecommerce monorep
 
 # Documentation audit
 
-Audit documentation without changing files. Read `AGENTS.md`, `docs/06-development/workflow.md`, `docs/06-development/agent-artifacts.md`, and `docs/06-development/documentation.md` first.
+Audit documentation without changing files. Read `AGENTS.md`, `docs/06-development/workflow.md`, `AGENTS.md`, and `docs/06-development/conventions.md` first.
 
 ## When to use
 

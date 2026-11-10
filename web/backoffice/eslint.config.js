@@ -12,7 +12,7 @@ export default defineConfig([
   globalIgnores([
     'dist',
     'coverage',
-    'src/api/generated',
+    'src/shared/api/generated',
     'src/routeTree.gen.ts',
     'public/mockServiceWorker.js',
   ]),

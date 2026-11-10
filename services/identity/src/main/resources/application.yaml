@@ -1,3 +1,30 @@
 spring:
   application:
     name: identity
+  datasource:
+    url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/identity}
+    username: ${IDENTITY_DB_USERNAME:ecommerce}
+    password: ${IDENTITY_DB_PASSWORD}
+  flyway:
+    enabled: true
+server:
+  port: ${IDENTITY_PORT:9000}
+identity:
+  backoffice-url: ${IDENTITY_BACKOFFICE_URL:https://localhost}
+  issuer: ${IDENTITY_ISSUER:http://localhost:9000}
+  server-enabled: ${IDENTITY_SERVER_ENABLED:true}
+  signing-key-set-path: ${IDENTITY_JWK_SET_PATH:}
+  active-signing-key-id: ${IDENTITY_ACTIVE_KEY_ID:}
+  client:
+    client-id: ${IDENTITY_CLIENT_ID:backoffice-bff}
+    client-name: ${IDENTITY_CLIENT_NAME:Backoffice BFF}
+    refresh-token-grant-enabled: ${IDENTITY_REFRESH_GRANT_ENABLED:false}
+    redirect-uris: ${IDENTITY_CLIENT_REDIRECT_URIS:}
+    post-logout-redirect-uris: ${IDENTITY_CLIENT_POST_LOGOUT_REDIRECT_URIS:}
+    scopes: ${IDENTITY_CLIENT_SCOPES:openid,profile,ecommerce.api,identity.admin,media.api}
+
+# MVC DEBUG/TRACE diagnostics can contain rejected credentials or request bodies.
+logging:
+  level:
+    "[org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver]": INFO
+    "[org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor]": INFO

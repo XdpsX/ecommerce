@@ -1,0 +1,17 @@
+﻿{
+  "login": {
+    "title": "Đăng nhập vào không gian làm việc",
+    "description": "Tiếp tục đến Identity để đăng nhập bảo mật.",
+    "action": "Đăng nhập",
+    "failed": "Không thể hoàn tất đăng nhập. Vui lòng thử lại.",
+    "sso": "Đăng xuất tại đây chỉ kết thúc phiên Backoffice. Phiên SSO của Identity có thể vẫn hoạt động."
+  },
+  "session": {
+    "loading": "Đang kiểm tra phiên…",
+    "unavailable": "Không thể kiểm tra phiên của bạn.",
+    "retry": "Thử lại",
+    "logout": "Đăng xuất",
+    "loggingOut": "Đang đăng xuất…",
+    "logoutFailed": "Chưa xác nhận được đăng xuất. Phiên đã được kiểm tra lại; hãy thử đăng xuất lại khi khả dụng."
+  }
+}
