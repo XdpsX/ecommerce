@@ -1,4 +1,4 @@
-package com.ecommerce.identity.configuration;
+package com.ecommerce.identity.config;
 
 import java.util.LinkedHashSet;
 import java.util.Set;

@@ -1,4 +1,4 @@
-package com.ecommerce.identity.adapter.web;
+package com.ecommerce.identity.shared.error;
 
 import java.net.URI;
 import java.util.Locale;

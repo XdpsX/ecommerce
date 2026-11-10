@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title th:text="#{login.title}">Sign in to Commerce</title>
+    <link rel="stylesheet" href="/login-assets/identity.css" />
+  </head>
+  <body>
+    <main class="login-page">
+      <a class="brand" th:href="${backofficeUrl}" th:aria-label="#{login.backToBackoffice}">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span class="brand-name">Commerce</span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="brand-product">Identity</span>
+      </a>
+
+      <section class="login-panel" aria-labelledby="login-title">
+        <h1 id="login-title" th:text="#{login.title}">Sign in to Commerce</h1>
+        <p class="description" th:text="#{login.description}">
+          Use your administrator account to continue to the Backoffice.
+        </p>
+
+        <p class="login-error" role="alert" th:if="${loginError}" th:text="#{login.failure}">
+          We could not sign you in. Please try again.
+        </p>
+
+        <form action="/login" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <label for="username" th:text="#{login.username}">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" required />
+
+          <label for="password" th:text="#{login.password}">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+          <button type="submit" th:text="#{login.submit}">Sign in</button>
+        </form>
+      </section>
+
+      <footer class="page-footer">Commerce Identity</footer>
+    </main>
+  </body>
+</html>

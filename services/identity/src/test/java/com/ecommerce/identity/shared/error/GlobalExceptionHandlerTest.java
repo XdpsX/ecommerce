@@ -1,4 +1,4 @@
-package com.ecommerce.identity.adapter.web;
+package com.ecommerce.identity.shared.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

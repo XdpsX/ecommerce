@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.ecommerce.identity.authorization.application.port.ClientRegistration;
-import com.ecommerce.identity.configuration.IdentityProperties;
+import com.ecommerce.identity.config.IdentityProperties;
 
 @Component
 @ConditionalOnProperty(name = "identity.command", havingValue = "register-client")

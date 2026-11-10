@@ -19,7 +19,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtEncodin
 import com.ecommerce.identity.admin.domain.Entitlements;
 import com.ecommerce.identity.admin.domain.Permission;
 import com.ecommerce.identity.authorization.adapter.oauth2.login.AdministratorSubjectResolver;
-import com.ecommerce.identity.configuration.IdentityProperties;
+import com.ecommerce.identity.config.IdentityProperties;
 
 class AccessTokenCustomizerTest {
     @Test

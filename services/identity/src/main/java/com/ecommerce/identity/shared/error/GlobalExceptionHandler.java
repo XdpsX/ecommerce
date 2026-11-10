@@ -1,4 +1,4 @@
-package com.ecommerce.identity.adapter.web;
+package com.ecommerce.identity.shared.error;
 
 import java.util.List;
 import java.util.Map;

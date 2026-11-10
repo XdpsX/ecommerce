@@ -1,4 +1,4 @@
-package com.ecommerce.identity.authorization.adapter.oauth2.token;
+package com.ecommerce.identity.config;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.ecommerce.identity.configuration.IdentityProperties;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;

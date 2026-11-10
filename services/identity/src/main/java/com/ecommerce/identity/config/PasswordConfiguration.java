@@ -1,4 +1,4 @@
-package com.ecommerce.identity.configuration;
+package com.ecommerce.identity.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

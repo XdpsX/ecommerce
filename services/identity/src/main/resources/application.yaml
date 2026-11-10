@@ -10,6 +10,7 @@ spring:
 server:
   port: ${IDENTITY_PORT:9000}
 identity:
+  backoffice-url: ${IDENTITY_BACKOFFICE_URL:https://localhost}
   issuer: ${IDENTITY_ISSUER:http://localhost:9000}
   server-enabled: ${IDENTITY_SERVER_ENABLED:true}
   signing-key-set-path: ${IDENTITY_JWK_SET_PATH:}
