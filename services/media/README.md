@@ -4,7 +4,7 @@ Media stores and serves private administrator-managed JPEG and PNG assets. It ow
 
 ## Code organization
 
-The asset capability owns `asset/domain`, `asset/application` and `asset/adapter`. Application services, ports, models and exceptions are grouped by responsibility; JDBC, Cloudinary, scheduling and asset HTTP adapters stay under `asset/adapter`. Service-wide security and Problem Details handling live in root `adapter/web`, while `configuration` contains service properties and bean wiring. Tests mirror these packages.
+The asset capability owns `asset/domain`, `asset/application` and `asset/adapter`. Application services, ports, models and exceptions are grouped by responsibility; JDBC, Cloudinary, scheduling and asset HTTP adapters stay under `asset/adapter`. Spring properties and bean/security composition live in root `config`. Service-wide Problem Details handling lives in `shared/error`; business exceptions remain in `asset/application/exception`. Tests mirror their implementation packages; `MediaJwtValidationTest` remains beside the configuration whose package-private bean it checks. No Cloudinary, persistence or feature HTTP component moves into `shared`.
 
 ## Local setup
 

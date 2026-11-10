@@ -53,8 +53,7 @@ class CloudinaryDirectUploadStorageTest {
                 Instant.parse("2026-11-06T00:15:00Z"),
                 "a_auto/fl_strip_profile",
                 "https://media.example.test/api/media/cloudinary/notifications");
-        com.ecommerce.media.configuration.MediaProperties properties =
-                new com.ecommerce.media.configuration.MediaProperties();
+        com.ecommerce.media.config.MediaProperties properties = new com.ecommerce.media.config.MediaProperties();
         properties.getStorage().getCloudinary().setCloudName("fixture-cloud");
         properties.getStorage().getCloudinary().setApiKey("fixture-key");
         properties.getStorage().getCloudinary().setApiSecret("fixture-secret");

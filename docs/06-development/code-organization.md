@@ -4,7 +4,7 @@ This is the default organization for new backend and frontend code and scoped re
 
 ## Approach and scope
 
-Organize backend code by feature or capability first, then by responsibility within that feature. Apply the dependency principles of Clean and Hexagonal Architecture where useful. This convention does not require full DDD, an interface for every class, or a separate Maven module for each feature.
+Organize backend business code by feature or capability first, then by responsibility within that feature. Organize service-wide technical code directly by responsibility under `shared`, and Spring composition under `config`. Apply the dependency principles of Clean and Hexagonal Architecture where useful. This convention applies to every backend service; it does not require full DDD, an interface for every class, or a separate Maven module for each feature.
 
 A feature is a cohesive capability within a service, such as administrator management. A package boundary is not a separate deployment or permission to share data across services. Service ownership and approved [architecture decisions](../03-architecture/adr/README.md) still apply.
 
@@ -15,8 +15,10 @@ The backend sections cover Java packages; the frontend section defines a React-o
 ```text
 com.ecommerce.<service>/
 ├── <Service>Application.java
-├── configuration/             # Service properties and composition
-├── adapter/web/                # Service-wide REST errors/security, when needed
+├── config/                    # Service properties and Spring composition
+├── shared/                     # Service-local technical components, when needed
+│   ├── security/               # Service-wide executable security components
+│   └── error/                  # HTTP error handling and Problem Details
 └── <feature>/
     ├── domain/                 # Business models and business rules
     ├── application/
@@ -33,24 +35,34 @@ com.ecommerce.<service>/
 
 This tree is illustrative, not a list of mandatory directories. Create a package only when it contains code with a distinct responsibility.
 
-Keep capability-owned code inside its feature even when the service currently has one capability. Service-wide HTTP concerns, such as a global exception handler or security filter chain, may live in root `adapter/web`; feature-specific endpoints stay under that feature's `adapter/web`.
+Keep capability-owned code inside its feature even when the service currently has one capability. Feature-specific endpoints stay under that feature's `adapter/web`. Service-wide technical components live under `shared`, grouped directly by responsibility; do not repeat `domain/application/adapter` inside `shared`. Root `adapter/web` is not the target location for these components.
+
+For example, the BFF's browser boundary and session-expiry filters and authorization-request resolver belong in `shared/security`; service-wide `GlobalExceptionHandler` or reactive `RestErrorHandler` and `ApiProblems` belong in `shared/error`. A feature-owned OAuth2 provider in Identity still belongs in `authorization/adapter/oauth2`. A class does not become shared merely because it uses a framework or has no domain logic.
 
 | Package | Responsibility | Typical contents |
 | --- | --- | --- |
 | `domain` | Business concepts and invariants | Entities, value objects, domain policies and domain errors |
 | `application` | Execute use cases and coordinate work | Application services, transaction boundaries, use-case input/output models, interfaces for required external capabilities |
 | `adapter` | Translate incoming interactions and implement required technical integrations | Controllers, transport DTOs, CLI commands, message handlers, JDBC repositories and external clients |
-| Service `configuration` | Assemble the application | Bean wiring, properties and service-wide framework configuration |
+| Service `config` | Assemble the application | Bean wiring, property binding and service-wide framework configuration |
+| Service `shared` | Service-local technical behavior spanning the service boundary | Browser security components in `shared/security`, HTTP error handling in `shared/error` |
 
-Feature-specific configuration may stay alongside the integration it configures. Do not put business decisions into configuration classes or let a general `configuration` package become a container for unrelated behavior.
+Keep Spring `@Configuration` and `@ConfigurationProperties` classes in the service root `config` package. This is the composition boundary and may import application contracts, concrete adapters and service-local technical components to wire them together. Security-chain DSL, route DSL, bean conditions and startup validation belong here; executable behavior belongs in the owning feature adapter or service-wide `shared` responsibility. Do not put business decisions in configuration classes or let `config` become a container for unrelated runtime behavior.
+
+Application services should receive small immutable application-owned settings or policies when they need configuration values. Keep mutable `@ConfigurationProperties`, credentials, SDK objects and framework types at the composition or adapter boundary; do not move an entire service properties object into the application layer.
+
+Production configuration classes belong in source `config`. Test-only `@TestConfiguration` and probes may live beside the test fixture that uses them; do not move them into production packages or add production helpers solely to expose package-private methods to tests.
 
 ## Backend dependency rules
 
 - `domain` must not depend on `application`, adapters, Spring, HTTP or persistence frameworks. Business rules must be understandable and testable without those technologies.
 - `application` may depend on `domain` and interfaces describing capabilities it needs. Keep those ports in `application/port` when there is a distinct group. It must not import controllers, transport DTOs or concrete adapters. Spring service and transaction annotations are acceptable; a framework-free application layer is not required.
+- Domain and application code must not depend on `config`, `shared.security` or `shared.error`. These packages are composition/technical boundaries, even though `shared` has no `adapter` segment in its name. HTTP filters, response serialization and framework security concerns stay outside business code.
 - Incoming adapters call application use cases. Keep HTTP, console and messaging concerns in their adapter packages; do not bypass use cases to perform business writes directly in a repository.
 - Outgoing adapters implement required interfaces and may depend on application/domain types. JDBC, ORM, vendor APIs and protocol-specific models stay at this boundary.
 - Composition code may reference both interfaces and implementations to wire them together. This does not allow use cases to reference implementation classes.
+- Root `config` is an explicit composition exception to dependency checks: it may reference Spring HTTP/security APIs, concrete adapters and `shared` components. Keep executable HTTP behavior in the owning feature adapter or shared technical package, and preserve package-private collaborators with narrow factories where cross-package wiring requires them; do not widen implementation visibility just to simplify composition.
+- `shared` is internal to one deployed service, not a cross-service Java library. Feature adapters and composition may use its technical components; those components must not depend on feature controllers, concrete persistence adapters or private business workflows. Cross-service reuse requires a separate demonstrated need and approval.
 - Keep dependencies between features acyclic. Consumers call an explicitly exposed application interface/facade or use-case contract of the owning feature; do not import another feature's persistence implementation or query its tables directly. Within a service, coordinate a necessary cross-feature transaction explicitly. Across services, use approved HTTP/event contracts, never shared table access.
 
 An interface belongs with the inner responsibility that requires it, usually `application/port`; its technical implementation belongs in an adapter package such as `adapter/persistence` or `adapter/storage`. A domain-specific abstraction may belong in `domain` when the business model itself needs it. Do not create matching interface/implementation pairs for every use case, helper or DTO. A concrete application service can be called directly by its incoming adapters.
@@ -61,7 +73,7 @@ For example, an administrator-disable use case can require a grant-revocation po
 
 Split a package when it contains distinct responsibilities or navigation and ownership become unclear, rather than at an arbitrary file count. Choose names that explain those responsibilities.
 
-Group related exceptions under the owning layer's `exception` package, such as `admin/application/exception`, rather than mixing a family of error classes with use cases. Domain errors stay with their domain owner; HTTP error advice and serialization belong in `adapter/web`. Do not collect all layers' exceptions into a service-wide generic exception package. Keep distinct types when callers need their semantics; an exception carrying only a free-form message is not a reliable error contract.
+Group related exceptions under the owning layer's `exception` package, such as `admin/application/exception`, rather than mixing a family of error classes with use cases. Domain errors stay with their domain owner. Service-wide HTTP error advice and serialization belong in `shared/error`; feature-specific transport handling stays with its adapter. Global advice may import the application/domain exception types it maps, but must not execute business use cases or persistence writes. Do not collect business exceptions from all layers into `shared/error`. Keep distinct types when callers need their semantics; an exception carrying only a free-form message is not a reliable error contract.
 
 For example, a feature may need `adapter/persistence` and `adapter/oauth2`, or `adapter/web` and `adapter/cli`. Another feature may have only a use case and one adapter. They need not have identical trees. Avoid generic packages such as `common`, `utils` or `server` becoming a default destination for unrelated code.
 
@@ -69,13 +81,15 @@ Technical capabilities such as an OAuth2 server need not invent a business domai
 
 Simple persistence-backed reads may use a JDBC query adapter without introducing a domain aggregate or a command-style service. Keep SQL in `adapter/persistence`; when a read crosses the application boundary, expose an application-owned query contract and result model. A transport controller should not depend on a concrete JDBC implementation.
 
-Reuse code within its owning feature first. Introduce a shared package or library only when actual consumers and stable shared semantics justify it; do not move unrelated helpers into shared code merely because multiple features use the same technology.
+Reuse code within its owning feature first. Use service-local `shared` for actual service-wide technical responsibilities; it need not have multiple feature callers when it protects the entire HTTP boundary. Do not create empty `shared/security` or `shared/error` packages, a generic `shared/utils` bucket, or a shared library merely because multiple services use the same technology. A CLI, scheduler or message consumer does not reuse HTTP filters/error writers; extract a transport-neutral policy only when actual consumers need it.
+
+This target replaces the earlier root `adapter/web` placement for service-wide components and permits the narrowly defined `shared/error` package. The current BFF, Ecommerce, Identity and Media source place their service-wide components in the approved `shared` packages; feature-owned HTTP adapters remain under their feature. Backend subpackages remain adaptive; this change does not alter frontend organization.
 
 ## Frontend organization
 
 Organize React applications by feature, with a small application composition layer and explicitly shared foundations. This is a pragmatic feature-based structure, not a requirement to adopt a full Feature-Sliced Design framework or backend-style domain/application layers.
 
-The current [Backoffice](../../web/backoffice/README.md) is a React/TypeScript/Vite skeleton. Its dependencies include TanStack Router, TanStack Query, React Hook Form and Zod, but business screens, routing and API generation are not yet integrated. The following tree is the convention for that work, not a description of existing folders or authorization to add dependencies.
+The current [Backoffice](../../web/backoffice/README.md) is a React/TypeScript/Vite application with a protected temporary dashboard, authentication/session flows, registered routing, and an Orval-generated client for the checked-in BFF OpenAPI contract. Its shared API transport handles same-origin requests, CSRF and common error normalization. Business metrics and domain screens are not implemented. The following tree is a convention for extending the application, not a description of every existing folder or authorization to add dependencies.
 
 ```text
 src/

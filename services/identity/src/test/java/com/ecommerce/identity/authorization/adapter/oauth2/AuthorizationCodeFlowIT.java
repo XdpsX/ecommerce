@@ -122,6 +122,7 @@ class AuthorizationCodeFlowIT {
         registry.add("identity.issuer", () -> ISSUER);
         registry.add("identity.signing-key-set-path", () -> JWK_SET_FILE.toString());
         registry.add("identity.active-signing-key-id", () -> KEY_ID);
+        registry.add("identity.backoffice-url", () -> "https://backoffice.test/");
     }
 
     @BeforeEach
@@ -206,7 +207,8 @@ class AuthorizationCodeFlowIT {
                 + "&scope=" + encode("openid profile ecommerce.api identity.admin")
                 + "&state=" + encode(state)
                 + "&code_challenge=" + encode(challenge)
-                + "&code_challenge_method=S256";
+                + "&code_challenge_method=S256"
+                + "&ui_locales=vi-VN";
 
         HttpResponse<String> authorize = getHtml(authorizeUrl);
         assertThat(authorize.statusCode()).isEqualTo(302);
@@ -214,6 +216,8 @@ class AuthorizationCodeFlowIT {
 
         HttpResponse<String> loginPage = get(baseUrl + "/login");
         assertThat(loginPage.statusCode()).isEqualTo(200);
+        assertThat(loginPage.body()).contains("lang=\"vi\"", "Đăng nhập Commerce");
+        assertThat(loginPage.headers().firstValue("Cache-Control").orElse("")).contains("no-store");
         String csrf = csrfToken(loginPage.body());
         HttpResponse<String> csrfRejected = postForm(baseUrl + "/login", "username=" + encode(USERNAME));
         assertThat(csrfRejected.statusCode()).isEqualTo(302);
@@ -224,6 +228,7 @@ class AuthorizationCodeFlowIT {
         assertThat(login.statusCode()).isEqualTo(302);
         assertThat(login.headers().firstValue("Location").orElseThrow()).contains("/oauth2/authorize?");
         assertThat(login.headers().firstValue("Location").orElseThrow()).contains("state-123");
+        assertThat(get(baseUrl + "/login").body()).contains("lang=\"vi\"", "Đăng nhập Commerce");
 
         HttpResponse<String> authorized = get(authorizeUrl);
         assertThat(authorized.statusCode()).isEqualTo(302);
@@ -292,6 +297,60 @@ class AuthorizationCodeFlowIT {
         assertThat(disabled.headers().firstValue("Location").orElseThrow()).contains("/login?error");
         assertThat(unknown.headers().firstValue("Location"))
                 .isEqualTo(disabled.headers().firstValue("Location"));
+    }
+
+    @Test
+    void localizesLoginFromHintsAndAcceptLanguageWithoutExposingFailureDetails() throws Exception {
+        HttpResponse<String> authorization =
+                get(authorizationRequestUrl("locale-vi", "openid") + "&ui_locales=fr-FR%20vi-VN");
+        assertThat(authorization.statusCode()).isEqualTo(302);
+        assertThat(authorization.headers().firstValue("Location").orElseThrow()).contains("/login");
+
+        HttpResponse<String> vietnamese = get(baseUrl + "/login");
+        assertThat(vietnamese.body()).contains("lang=\"vi\"", "Đăng nhập Commerce", "Tên đăng nhập");
+        assertThat(vietnamese.body())
+                .contains("href=\"https://backoffice.test/\"", "aria-label=\"Quay về Commerce Backoffice\"");
+        String failedForm = "username=" + encode("missing.admin") + "&password=" + encode("invalid") + "&_csrf="
+                + encode(csrfToken(vietnamese.body()));
+        HttpResponse<String> failed = postForm(baseUrl + "/login", failedForm);
+        assertThat(failed.statusCode()).isEqualTo(302);
+        assertThat(failed.headers().firstValue("Location").orElseThrow()).contains("/login?error");
+        HttpResponse<String> failurePage = get(baseUrl + "/login?error");
+        assertThat(failurePage.body())
+                .contains("lang=\"vi\"", "Không thể đăng nhập")
+                .doesNotContain("missing.admin", "invalid");
+
+        get(authorizationRequestUrl("locale-en", "openid") + "&ui_locales=en-US");
+        HttpResponse<String> englishOverride = get(baseUrl + "/login");
+        assertThat(englishOverride.body()).contains("lang=\"en\"", "Sign in to Commerce");
+        assertThat(get(baseUrl + "/login-assets/identity.css").statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void honorsVietnameseHintForBrowserOidcNavigationWithEnglishBrowserPreference() throws Exception {
+        HttpResponse<String> authorization = http.send(
+                HttpRequest.newBuilder(URI.create(authorizationRequestUrl("browser-locale", "openid profile")
+                                + "&nonce=browser-nonce&ui_locales=vi"))
+                        .header("Accept", "text/html")
+                        .header("Accept-Language", "en-US,en;q=0.9")
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertThat(authorization.statusCode()).isEqualTo(302);
+        HttpResponse<String> login = getWithLanguage(baseUrl + "/login", "en-US,en;q=0.9");
+        assertThat(login.body()).contains("lang=\"vi\"", "Đăng nhập Commerce");
+    }
+
+    @Test
+    void usesSupportedAcceptLanguageThenFallsBackToEnglish() throws Exception {
+        HttpResponse<String> unsupported = getWithLanguage(baseUrl + "/login", "fr-CA");
+        assertThat(unsupported.body()).contains("lang=\"en\"", "Sign in to Commerce");
+
+        HttpResponse<String> vietnamese = getWithLanguage(baseUrl + "/login", "fr-CA, vi-VN;q=0.8");
+        assertThat(vietnamese.body()).contains("lang=\"vi\"", "Tên đăng nhập");
+
+        HttpResponse<String> sessionPreference = getWithLanguage(baseUrl + "/login", "en-US");
+        assertThat(sessionPreference.body()).contains("lang=\"vi\"", "Tên đăng nhập");
     }
 
     @Test
@@ -655,6 +714,15 @@ class AuthorizationCodeFlowIT {
         return http.send(HttpRequest.newBuilder(URI.create(url)).GET().build(), HttpResponse.BodyHandlers.ofString());
     }
 
+    private HttpResponse<String> getWithLanguage(String url, String language) throws Exception {
+        return http.send(
+                HttpRequest.newBuilder(URI.create(url))
+                        .header("Accept-Language", language)
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
     private HttpResponse<String> getWithBearer(String url, String accessToken) throws Exception {
         return http.send(
                 HttpRequest.newBuilder(URI.create(url))
@@ -763,10 +831,21 @@ class AuthorizationCodeFlowIT {
     }
 
     private String csrfToken(String html) {
-        var matcher = java.util.regex.Pattern.compile("name=\"_csrf\"[^>]*value=\"([^\"]+)\"")
+        var input = java.util.regex.Pattern.compile("<input\\b(?=[^>]*\\bname=\"_csrf\")[^>]*>")
                 .matcher(html);
-        assertThat(matcher.find()).isTrue();
-        return matcher.group(1);
+        var matcher = java.util.regex.Pattern.compile("\\bvalue=\"([^\"]+)\"");
+        boolean found = false;
+        String token = null;
+        while (input.find()) {
+            var field = matcher.matcher(input.group());
+            if (field.find()) {
+                found = true;
+                token = field.group(1);
+                break;
+            }
+        }
+        assertThat(found).isTrue();
+        return token;
     }
 
     private String encode(String value) {

@@ -1,0 +1,7 @@
+spring:
+  config:
+    import: "optional:file:../../.env[.properties]"
+bff:
+  public-origin: ${BFF_PUBLIC_ORIGIN:http://localhost:3000}
+  secure-cookie: false
+spring.security.oauth2.client.registration.identity.redirect-uri: "${BFF_PUBLIC_ORIGIN:http://localhost:3000}/login/oauth2/code/identity"

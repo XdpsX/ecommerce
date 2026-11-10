@@ -16,14 +16,19 @@ class ArchitectureBoundaryTest {
                     paths.filter(file -> file.toString().endsWith(".java")).toList()) {
                 String source = Files.readString(path);
                 String relative = sourceRoot.relativize(path).toString().replace('\\', '/');
+                boolean composition = relative.startsWith("config/");
                 if (relative.startsWith("asset/domain/")) {
-                    assertThat(source).as(relative).doesNotContain("org.springframework", ".application.", ".adapter.");
+                    assertThat(source)
+                            .as(relative)
+                            .doesNotContain("org.springframework", ".application.", ".adapter.", ".shared.");
                 }
                 if (relative.startsWith("asset/application/")) {
                     assertThat(source)
                             .as(relative)
                             .doesNotContain(
                                     ".adapter.",
+                                    "com.ecommerce.media.shared.",
+                                    "com.ecommerce.media.config.",
                                     "org.springframework.http",
                                     "org.springframework.jdbc",
                                     "com.cloudinary");
@@ -31,8 +36,33 @@ class ArchitectureBoundaryTest {
                 if (relative.startsWith("asset/adapter/web/")) {
                     assertThat(source).as(relative).doesNotContain("org.springframework.jdbc", ".adapter.persistence.");
                 }
-                if (relative.startsWith("adapter/web/")) {
-                    assertThat(source).as(relative).doesNotContain("org.springframework.jdbc", ".adapter.persistence.");
+                if (relative.startsWith("shared/")) {
+                    assertThat(relative)
+                            .as("shared HTTP placement: %s", relative)
+                            .startsWith("shared/error/");
+                    assertThat(source)
+                            .as(relative)
+                            .doesNotContain(
+                                    "org.springframework.jdbc",
+                                    "jakarta.persistence",
+                                    ".asset.adapter.",
+                                    ".asset.application.service.",
+                                    ".asset.application.port.",
+                                    ".config.",
+                                    ".domain.");
+                }
+                if (source.contains("org.springframework.context.annotation.Configuration")
+                        || source.contains("@ConfigurationProperties")) {
+                    assertThat(relative)
+                            .as("configuration placement: %s", relative)
+                            .startsWith("config/");
+                }
+                if (!composition
+                        && (source.contains("org.springframework.http.")
+                                || source.contains("org.springframework.security.web."))) {
+                    assertThat(relative)
+                            .as("HTTP adapter placement: %s", relative)
+                            .matches("(?:asset/adapter/web|shared/error)/.*");
                 }
                 assertThat(source)
                         .as(relative)
@@ -45,5 +75,9 @@ class ArchitectureBoundaryTest {
                                 + ";");
             }
         }
+        assertThat(Files.exists(sourceRoot.resolve("shared/error/GlobalExceptionHandler.java")))
+                .isTrue();
+        assertThat(Files.exists(sourceRoot.resolve("shared/error/ApiProblems.java")))
+                .isTrue();
     }
 }

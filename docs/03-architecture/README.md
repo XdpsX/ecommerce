@@ -2,19 +2,21 @@
 
 ## Current repository state
 
-The monorepo has four independent Spring Boot services: Ecommerce and Identity foundations plus a Media image-storage service; Notification remains a skeleton. `web/backoffice` is a React skeleton; `web/storefront` and both BFF directories are placeholders. Legacy business modules have not been migrated.
+The monorepo has Ecommerce and Identity foundations, a Media image-storage service and the [Backoffice BFF](../../services/backoffice-bff/README.md); Notification remains a skeleton. Backoffice has a protected temporary dashboard with English/Vietnamese UI. Storefront and its BFF remain placeholders. Legacy business modules have not been migrated.
 
 `infra/compose/compose.yml` provisions PostgreSQL and Redis for IDE-based development. `compose.local.yml` includes the infrastructure and is reserved for future containerized application services. See [local infrastructure](../../infra/README.md). OpenAPI specifications live in `contracts/openapi/`; events remain reserved for future schemas.
 
-## Target direction (not implemented)
+## Target direction and implemented foundations
 
 The target is an Ecommerce modular monolith with separate Identity, Notification and Media capabilities, Backoffice and Storefront frontends, and an approved Backoffice BFF/API Gateway direction. Storefront BFF remains deferred.
 
-[ADR-0001](adr/0001-backoffice-bff-as-api-gateway.md) approves Spring Cloud Gateway (WebFlux) as the Backoffice BFF, with OAuth2/OIDC confidential-client login and Redis-backed sessions. The BFF is **not implemented**. Other ownership, HTTP/event contracts, data boundaries and deployment decisions need further evidence.
+[ADR-0001](adr/0001-backoffice-bff-as-api-gateway.md) approves Spring Cloud Gateway (WebFlux) as the Backoffice BFF, with OAuth2/OIDC confidential-client login and Redis-backed sessions. Issue #14 implements this browser boundary with no refresh-token support and local BFF logout; Identity SSO may remain active. The [browser contract](../../contracts/openapi/backoffice-bff.yaml) defines session, CSRF and logout. Business modules and production deployment remain future work.
 
-## Ecommerce package organization
+## Backend package organization
 
-Ecommerce keeps its application entry point in `com.ecommerce.api` and its resource-server configuration, REST advice and Problem Details writer in `adapter.web`. Identity groups its admin capability and OAuth2 adapters under their owners. Media groups asset code under the `asset` feature, with service-wide HTTP/security adapters at the root. See the service READMEs and the [code organization convention](../06-development/code-organization.md) for the implemented structures and dependency rules.
+All backend services use the approved separation of root `config` for Spring composition/properties, service-local `shared/security` and `shared/error` for service-wide technical behavior, and feature-owned `domain/application/adapter` packages. Create only packages with actual contents. `shared` is internal to each service, not a shared runtime library, and does not contain feature business exceptions or use cases. Ecommerce retains namespace `com.ecommerce.api`; other namespaces remain unchanged. Identity's OAuth2 capability and Media's `asset` capability retain their owners. See the [code organization convention](../06-development/code-organization.md) for dependency rules.
+
+Implementation status: service-wide HTTP error handling now lives in each service's `shared/error`; BFF browser filters and the locale-aware authorization-request resolver live in `shared/security`. Feature-owned HTTP adapters remain with their features, and root `config` retains composition. The service READMEs describe the current package boundaries.
 
 ## Identity design
 
@@ -22,7 +24,7 @@ Ecommerce keeps its application entry point in `com.ecommerce.api` and its resou
 
 ## Media design
 
-[Media Service](media-service.md) documents the implemented private image-storage boundary, Identity-issued entitlements, authenticated provider assets, cleanup recovery and deferred consumer attachment rules. Asset code is grouped under its feature and service-wide HTTP/security adapters are at the root. Deployed-account provider smoke checks remain release requirements. [ADR-0003](adr/0003-media-direct-upload-cloudinary-a1.md) selects the unimplemented A1 direct-upload direction; its [security and operations specification](media-direct-upload-security-operations.md) preserves failed/unresolved gates and policy decisions after spike closure.
+[Media Service](media-service.md) documents the implemented private image-storage boundary, Identity-issued entitlements, authenticated provider assets, cleanup recovery and deferred consumer attachment rules. Asset code remains feature-owned; the backend package convention above defines the target placement of service-wide technical components. Deployed-account provider smoke checks remain release requirements. [ADR-0003](adr/0003-media-direct-upload-cloudinary-a1.md) selects the A1 direct-upload direction; its [security and operations specification](media-direct-upload-security-operations.md) preserves failed/unresolved gates and policy decisions after spike closure.
 
 ## Organization
 

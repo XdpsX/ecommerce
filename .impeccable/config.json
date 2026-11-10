@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-11-07T17:24:17.640Z",
+        "reason": "Approved Issue #14 UI plan specifies Geist consistently across Backoffice and Identity"
+      }
+    ]
+  }
+}

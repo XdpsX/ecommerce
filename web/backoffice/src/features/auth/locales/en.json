@@ -1,0 +1,17 @@
+﻿{
+  "login": {
+    "title": "Sign in to your workspace",
+    "description": "Continue to Identity to sign in securely.",
+    "action": "Sign in",
+    "failed": "Sign-in could not be completed. Please try again.",
+    "sso": "Signing out here ends only the Backoffice session. Identity SSO may remain active."
+  },
+  "session": {
+    "loading": "Checking your session…",
+    "unavailable": "Your session could not be checked.",
+    "retry": "Try again",
+    "logout": "Sign out",
+    "loggingOut": "Signing out…",
+    "logoutFailed": "Sign-out was not confirmed. Your session was checked again; retry sign-out when available."
+  }
+}

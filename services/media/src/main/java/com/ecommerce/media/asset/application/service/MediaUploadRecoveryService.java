@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.ecommerce.media.asset.application.exception.DirectUploadException;
 import com.ecommerce.media.asset.application.exception.MediaPersistenceLockTimeoutException;
+import com.ecommerce.media.asset.application.model.DirectUploadSettings;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage.DiscoveredObject;
 import com.ecommerce.media.asset.application.port.MediaUploadIntentRepository;
@@ -20,7 +21,6 @@ import com.ecommerce.media.asset.application.port.MediaUploadIntentRepository.Di
 import com.ecommerce.media.asset.application.port.MediaUploadIntentRepository.DiscoveredTarget;
 import com.ecommerce.media.asset.domain.MediaUploadIntent;
 import com.ecommerce.media.asset.domain.UploadIntentState;
-import com.ecommerce.media.configuration.MediaProperties;
 
 @Service
 public class MediaUploadRecoveryService {
@@ -29,27 +29,27 @@ public class MediaUploadRecoveryService {
     private final MediaUploadIntentRepository repository;
     private final MediaUploadIntentService verifier;
     private final DirectUploadStorage storage;
-    private final MediaProperties.DirectUpload settings;
+    private final DirectUploadSettings settings;
     private final Clock clock;
 
     public MediaUploadRecoveryService(
             MediaUploadIntentRepository repository,
             MediaUploadIntentService verifier,
             DirectUploadStorage storage,
-            MediaProperties properties,
+            DirectUploadSettings settings,
             Clock mediaClock) {
         this.repository = repository;
         this.verifier = verifier;
         this.storage = storage;
-        this.settings = properties.getDirectUpload();
+        this.settings = settings;
         this.clock = mediaClock;
     }
 
     public void runBatch() {
         Instant now = clock.instant();
         UUID lease = UUID.randomUUID();
-        List<MediaUploadIntent> intents = repository.claimDue(
-                now, lease, now.plus(settings.getLeaseDuration()), settings.getReconcileBatchSize());
+        List<MediaUploadIntent> intents =
+                repository.claimDue(now, lease, now.plus(settings.leaseDuration()), settings.reconcileBatchSize());
         int failed = 0;
         for (MediaUploadIntent intent : intents) {
             try {
@@ -64,7 +64,7 @@ public class MediaUploadRecoveryService {
                             category(exception),
                             clock.instant().plus(retryDelay(intent.retryCount())),
                             clock.instant(),
-                            settings.getBatchDeadline());
+                            settings.batchDeadline());
                 } catch (MediaPersistenceLockTimeoutException retryFailure) {
                     logger.warn("Could not persist recovery retry before lock timeout; lease retained");
                 }
@@ -92,7 +92,7 @@ public class MediaUploadRecoveryService {
         }
         if (intent.state() == UploadIntentState.COMPLETED
                 && (intent.mediaId() == null || intent.providerAssetId() == null)) {
-            repository.saveDiscoveryProgress(intent.id(), lease, "image", null, now.plus(settings.getRetryCap()), now);
+            repository.saveDiscoveryProgress(intent.id(), lease, "image", null, now.plus(settings.retryCap()), now);
             return;
         }
         discoverAndDelete(intent, lease, now);
@@ -104,13 +104,13 @@ public class MediaUploadRecoveryService {
         String nextType = resourceType;
         String nextCursor = cursor;
         Instant nextDue = now.plus(discoveryInterval(intent, now));
-        for (int page = 0; page < settings.getDiscoveryPagesPerClaim(); page++) {
+        for (int page = 0; page < settings.discoveryPagesPerClaim(); page++) {
             if (!reserveRecoveryCall(now)) {
                 nextDue = nextBudgetReset(now);
                 break;
             }
             var response =
-                    storage.discover(intent.providerPublicId(), resourceType, cursor, settings.getDiscoveryPageSize());
+                    storage.discover(intent.providerPublicId(), resourceType, cursor, settings.discoveryPageSize());
             List<DirectTarget> safeTargets = response.objects().stream()
                     .filter(found -> trustedExactIdentity(intent, found))
                     .filter(found -> !isReadyWinner(intent, found))
@@ -145,14 +145,14 @@ public class MediaUploadRecoveryService {
 
     private void deleteTargets(MediaUploadIntent intent, UUID leaseToken, Instant now) {
         List<DiscoveredTarget> targets = repository.claimDiscoveredTargets(
-                intent.id(), leaseToken, now, now.plus(settings.getLeaseDuration()), settings.getDeletesPerClaim());
+                intent.id(), leaseToken, now, now.plus(settings.leaseDuration()), settings.deletesPerClaim());
         for (DiscoveredTarget target : targets) {
             if (!safeStoredTarget(intent, target)
                     || intent.state() == UploadIntentState.COMPLETED
                             && "image".equals(target.resourceType())
                             && intent.providerAssetId().equals(target.assetId())) {
                 repository.retryTarget(
-                        target.id(), leaseToken, "IDENTITY_OR_WINNER_PROTECTED", now.plus(settings.getRetryCap()), now);
+                        target.id(), leaseToken, "IDENTITY_OR_WINNER_PROTECTED", now.plus(settings.retryCap()), now);
                 continue;
             }
             if (!reserveRecoveryCall(clock.instant())) {
@@ -186,7 +186,7 @@ public class MediaUploadRecoveryService {
                 .withNano(0)
                 .toInstant();
         return repository.reserveProviderCall(
-                hour, true, settings.getProviderCallsPerHour(), settings.getReservedRecoveryCallsPerHour());
+                hour, true, settings.providerCallsPerHour(), settings.reservedRecoveryCallsPerHour());
     }
 
     private boolean trustedExactIdentity(MediaUploadIntent intent, DiscoveredObject found) {
@@ -227,8 +227,8 @@ public class MediaUploadRecoveryService {
     }
 
     private Duration retryDelay(int attempts) {
-        long baseSeconds = Math.min(settings.getRetryCap().toSeconds(), 60L << Math.min(10, Math.max(0, attempts)));
-        long upperSeconds = Math.min(settings.getRetryCap().toSeconds(), baseSeconds + Math.max(1, baseSeconds / 2));
+        long baseSeconds = Math.min(settings.retryCap().toSeconds(), 60L << Math.min(10, Math.max(0, attempts)));
+        long upperSeconds = Math.min(settings.retryCap().toSeconds(), baseSeconds + Math.max(1, baseSeconds / 2));
         long delay = java.util.concurrent.ThreadLocalRandom.current()
                 .nextLong(Math.max(1, baseSeconds), Math.max(baseSeconds + 1, upperSeconds + 1));
         return Duration.ofSeconds(delay);

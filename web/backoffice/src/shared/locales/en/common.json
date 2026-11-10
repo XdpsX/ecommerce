@@ -1,0 +1,32 @@
+{
+  "app": {
+    "documentTitle": "Commerce Backoffice",
+    "skipContent": "Skip to content",
+    "brandLabel": "Commerce Backoffice home",
+    "brandArea": "Backoffice",
+    "footerDescription": "Administration workspace"
+  },
+  "navigation": {
+    "label": "Primary navigation",
+    "dashboard": "Dashboard",
+    "signIn": "Sign in",
+    "language": "Language",
+    "english": "English",
+    "vietnamese": "Vietnamese",
+    "open": "Open navigation",
+    "close": "Close navigation"
+  },
+  "notFound": {
+    "title": "We could not find that page.",
+    "description": "The address may be outdated or the page may have moved.",
+    "back": "Return to dashboard"
+  },
+  "routeError": {
+    "title": "This page could not be displayed.",
+    "description": "Try loading the page again.",
+    "retry": "Try again"
+  },
+  "errors": {
+    "requestFallback": "The request could not be completed. Please try again."
+  }
+}

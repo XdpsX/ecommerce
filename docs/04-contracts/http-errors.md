@@ -56,6 +56,8 @@ Identity's current business codes are `INVALID_ADMINISTRATOR` (400), `ADMINISTRA
 
 ## Implementation and security boundaries
 
+The approved [backend organization](../06-development/code-organization.md) places service-wide HTTP advice/error handlers and Problem Details writers in each service's `shared/error`; feature-specific transport handling stays in its adapter. `shared/error` is a service-local HTTP boundary, not a cross-service runtime library or a home for business exceptions. This placement changes no response schema, status, security-filter behavior or OAuth2 protocol errors.
+
 Use `@RestControllerAdvice` in HTTP adapters to translate application/domain errors and MVC failures. Exception types remain independent of HTTP status and response models. Controllers should not repeat catches just to perform status mapping; see [engineering conventions](../06-development/conventions.md).
 
 Security-filter authentication/authorization failures use their corresponding entry point or access-denied handler, producing the same REST envelope. OAuth2/OIDC errors remain with the protocol implementation. Keep REST advice scoped so a generic handler cannot intercept and rewrite OAuth responses. Preserve error status and required headers across a future BFF; browser integration must be verified when that BFF is implemented.

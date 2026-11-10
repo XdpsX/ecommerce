@@ -21,7 +21,7 @@ import com.ecommerce.media.asset.application.exception.StorageFailure;
 import com.ecommerce.media.asset.application.model.CanonicalImage;
 import com.ecommerce.media.asset.application.port.MediaStorage;
 import com.ecommerce.media.asset.application.port.MediaStorage.DeleteResult;
-import com.ecommerce.media.configuration.MediaProperties;
+import com.ecommerce.media.config.MediaProperties;
 import com.sun.net.httpserver.HttpServer;
 
 class CloudinaryStorageTest {

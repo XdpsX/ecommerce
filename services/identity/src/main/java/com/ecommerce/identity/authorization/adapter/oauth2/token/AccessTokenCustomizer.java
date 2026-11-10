@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.ecommerce.identity.admin.domain.Permission;
 import com.ecommerce.identity.authorization.adapter.oauth2.login.AdministratorSubjectResolver;
-import com.ecommerce.identity.configuration.IdentityProperties;
+import com.ecommerce.identity.config.IdentityProperties;
 
 @Component
 public class AccessTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {

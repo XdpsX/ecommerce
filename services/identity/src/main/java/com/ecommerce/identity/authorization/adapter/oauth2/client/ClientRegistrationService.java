@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ecommerce.identity.admin.application.service.AdministratorDirectory;
 import com.ecommerce.identity.authorization.application.port.ClientRegistration;
-import com.ecommerce.identity.configuration.IdentityProperties;
+import com.ecommerce.identity.config.IdentityProperties;
 
 @Service
 public class ClientRegistrationService implements ClientRegistration {

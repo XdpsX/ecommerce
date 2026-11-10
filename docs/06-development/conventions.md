@@ -15,6 +15,8 @@ Canonical engineering rules for this monorepo. Agent-specific permissions and sk
 
 Follow [code organization](code-organization.md) for backend and frontend feature organization, responsibility and dependency boundaries, and justified exceptions. Apply it to new code and scoped refactors; internal packages and folders may vary by capability.
 
+For all backend services, that guide defines the approved separation between root `config`, service-local technical `shared` responsibilities and feature-owned layers/adapters. Existing placements migrate within an approved scope; the convention alone does not authorize code changes.
+
 ## Security and contracts
 
 - Do not expose secrets, sensitive data or untrusted HTML. Check authentication and authorization at relevant boundaries.

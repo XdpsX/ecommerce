@@ -2,3 +2,5 @@ spring:
   config:
     # spring-boot:run uses services/identity as its default working directory.
     import: "optional:file:../../.env[.properties]"
+identity:
+  backoffice-url: ${IDENTITY_BACKOFFICE_URL:http://localhost:3000}

@@ -14,30 +14,30 @@ import com.ecommerce.media.asset.application.exception.StorageFailure;
 import com.ecommerce.media.asset.application.model.CanonicalImage;
 import com.ecommerce.media.asset.application.model.DownloadLink;
 import com.ecommerce.media.asset.application.model.MediaAssetView;
+import com.ecommerce.media.asset.application.model.MediaLifecycleSettings;
 import com.ecommerce.media.asset.application.port.MediaAssetRepository;
 import com.ecommerce.media.asset.application.port.MediaStorage;
 import com.ecommerce.media.asset.domain.AssetStatus;
 import com.ecommerce.media.asset.domain.MediaAsset;
-import com.ecommerce.media.configuration.MediaProperties;
 
 @Service
 public class MediaAssetService {
     private final MediaAssetRepository repository;
     private final ImageCanonicalizer canonicalizer;
     private final MediaStorage storage;
-    private final MediaProperties properties;
+    private final MediaLifecycleSettings settings;
     private final Clock clock;
 
     public MediaAssetService(
             MediaAssetRepository repository,
             ImageCanonicalizer canonicalizer,
             MediaStorage storage,
-            MediaProperties properties,
+            MediaLifecycleSettings settings,
             Clock mediaClock) {
         this.repository = repository;
         this.canonicalizer = canonicalizer;
         this.storage = storage;
-        this.properties = properties;
+        this.settings = settings;
         this.clock = mediaClock;
     }
 
@@ -106,7 +106,7 @@ public class MediaAssetService {
             throw MediaException.conflict();
         }
         Instant expiry = Instant.ofEpochSecond(
-                clock.instant().plus(properties.getDownloadLinkTtl()).getEpochSecond());
+                clock.instant().plus(settings.downloadLinkTtl()).getEpochSecond());
         try {
             String url = storage.downloadLink(asset.providerPublicId(), format(asset.mediaType()), expiry);
             return new DownloadLink(url, expiry);
@@ -134,15 +134,14 @@ public class MediaAssetService {
 
     public CleanupSummary runCleanupBatch() {
         Instant now = clock.instant();
-        MediaProperties.Cleanup cleanup = properties.getCleanup();
-        Instant abandonedBefore = now.minus(cleanup.getAbandonAfter());
+        Instant abandonedBefore = now.minus(settings.abandonAfter());
         int deleted = 0;
         int retried = 0;
         int ambiguousCount = 0;
         int claimedCount = 0;
-        for (int index = 0; index < cleanup.getBatchSize(); index++) {
+        for (int index = 0; index < settings.cleanupBatchSize(); index++) {
             List<MediaAsset> assets = repository.claimCleanup(
-                    clock.instant(), abandonedBefore, clock.instant().plus(cleanup.getLeaseDuration()), 1);
+                    clock.instant(), abandonedBefore, clock.instant().plus(settings.cleanupLeaseDuration()), 1);
             if (assets.isEmpty()) {
                 break;
             }
@@ -182,7 +181,7 @@ public class MediaAssetService {
 
     private Instant retryAt(int attempt) {
         long exponent = Math.min(Math.max(0, attempt - 1), 20);
-        long cap = Math.max(1, properties.getCleanup().getRetryCap().toSeconds());
+        long cap = Math.max(1, settings.retryCap().toSeconds());
         long ceiling = Math.min(cap, 60L << exponent);
         long seconds = ThreadLocalRandom.current().nextLong(Math.max(1, ceiling / 2), ceiling + 1);
         return clock.instant().plusSeconds(seconds);

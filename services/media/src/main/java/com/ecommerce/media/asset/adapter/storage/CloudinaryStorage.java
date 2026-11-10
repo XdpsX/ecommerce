@@ -24,7 +24,7 @@ import com.ecommerce.media.asset.application.exception.StorageFailure;
 import com.ecommerce.media.asset.application.exception.StorageFailure.Category;
 import com.ecommerce.media.asset.application.model.CanonicalImage;
 import com.ecommerce.media.asset.application.port.MediaStorage;
-import com.ecommerce.media.configuration.MediaProperties;
+import com.ecommerce.media.config.MediaProperties;
 
 @Component
 public class CloudinaryStorage implements MediaStorage {
