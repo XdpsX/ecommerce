@@ -1,0 +1,7 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "greeting": "Welcome to the backoffice.",
+    "description": "Your workspace for the store tools and workflows ahead."
+  }
+}

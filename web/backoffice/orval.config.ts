@@ -1,29 +1,23 @@
-import normalizeOpenApi from './scripts/normalize-openapi.ts'
 import { defineConfig } from 'orval'
-
-const openApiTarget =
-  process.env.OPENAPI_URL ?? 'http://localhost:8080/v3/api-docs/backoffice'
 
 export default defineConfig({
   backoffice: {
+    hooks: {
+      afterAllFilesWrite:
+        'node node_modules/prettier/bin/prettier.cjs --write src/shared/api/generated',
+    },
     input: {
-      target: openApiTarget,
-      override: {
-        transformer: normalizeOpenApi,
-      },
+      target: '../../contracts/openapi/backoffice-bff.yaml',
+      parserOptions: { externalRefs: { allow: ['common/problem.yaml'] } },
     },
     output: {
-      mode: 'tags-split',
-      target: 'src/api/generated/endpoints',
-      schemas: 'src/api/generated/model',
+      mode: 'single',
+      target: 'src/shared/api/generated/backoffice.ts',
+      schemas: 'src/shared/api/generated/model',
       client: 'react-query',
       httpClient: 'axios',
-      clean: false,
       override: {
-        mutator: {
-          path: 'src/api/client.ts',
-          name: 'apiClient',
-        },
+        mutator: { path: 'src/shared/api/client.ts', name: 'apiClient' },
       },
     },
   },

@@ -1,0 +1,32 @@
+{
+  "app": {
+    "documentTitle": "Commerce Backoffice",
+    "skipContent": "Bỏ qua đến nội dung",
+    "brandLabel": "Trang chủ Commerce Backoffice",
+    "brandArea": "Quản trị",
+    "footerDescription": "Không gian quản trị"
+  },
+  "navigation": {
+    "label": "Điều hướng chính",
+    "dashboard": "Dashboard",
+    "signIn": "Đăng nhập",
+    "language": "Ngôn ngữ",
+    "english": "Tiếng Anh",
+    "vietnamese": "Tiếng Việt",
+    "open": "Mở điều hướng",
+    "close": "Đóng điều hướng"
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang này.",
+    "description": "Địa chỉ có thể đã cũ hoặc trang đã được chuyển đi.",
+    "back": "Quay lại bảng điều khiển"
+  },
+  "routeError": {
+    "title": "Không thể hiển thị trang này.",
+    "description": "Hãy thử tải lại trang.",
+    "retry": "Thử lại"
+  },
+  "errors": {
+    "requestFallback": "Không thể hoàn tất yêu cầu. Vui lòng thử lại."
+  }
+}
