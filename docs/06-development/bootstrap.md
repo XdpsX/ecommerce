@@ -33,19 +33,19 @@ corepack pnpm build
 corepack pnpm dev
 ```
 
-The `dev` command starts the local Vite server; it is not part of the CI verification sequence. API generation (`generate:api`) depends on a suitable OpenAPI source and API client integration and is not part of skeleton verification. See the [Backoffice README](../../web/backoffice/README.md).
+The `dev` command starts Vite on port 3000 and proxies browser API/OAuth paths to BFF port 8081. Configure Identity, Redis and the confidential client using the [BFF guide](../../services/backoffice-bff/README.md). `generate:api` consumes the checked-in browser OpenAPI contract without a running backend; generation drift is checked in CI. See the [Backoffice README](../../web/backoffice/README.md).
 
 ## CI
 
-Five application-specific workflows live under `.github/workflows/`: `ecommerce-ci.yml`, `identity-ci.yml`, `notification-ci.yml`, `media-ci.yml` and `backoffice-ci.yml`. They run application-specific verification on configured push/PR path filters and support manual dispatch. Check the workflow files for exact triggers and commands.
+Six application-specific workflows live under `.github/workflows/`: `ecommerce-ci.yml`, `identity-ci.yml`, `notification-ci.yml`, `media-ci.yml`, `backoffice-ci.yml` and `backoffice-bff-ci.yml`. They run application-specific verification on configured push/PR path filters and support manual dispatch. BFF CI builds Identity before testing real OAuth and Redis integration. Check the workflow files for exact triggers and commands.
 
 A workflow definition does not prove a successful run. Consult GitHub Actions for actual status. Path-filtered workflows may be skipped on docs-only changes; consider this when configuring required checks.
 
 ## Current limitations
 
 - Business modules have not been migrated.
-- Storefront and BFF directories are placeholders.
+- Storefront and its BFF remain placeholders; Backoffice BFF is implemented.
 - PostgreSQL and Redis are provisioned with Docker Compose; see [local infrastructure](../../infra/README.md). Application containers have not yet been added.
-- `contracts/` contains placeholders rather than published schemas.
+- OpenAPI contracts are checked in; event contracts remain reserved.
 
 Follow [workflow](workflow.md) and [conventions](conventions.md). Agent instructions are in [AGENTS.md](../../AGENTS.md); optional GitNexus/Serena setup is in [tooling](../../tooling/code-intelligence.md).

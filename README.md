@@ -10,10 +10,11 @@ Ecommerce monorepo in the **platform foundation / bootstrap** stage. Application
 | `services/identity/` | Identity service | Spring Boot skeleton |
 | `services/notification/` | Notification service | Spring Boot skeleton |
 | `services/media/` | Media service | Private image upload, metadata, signed download links and durable deletion |
-| `services/backoffice-bff/`, `services/storefront-bff/` | Reserved BFF locations | Placeholders |
-| `web/backoffice/` | React admin application | Frontend skeleton |
+| `services/backoffice-bff/` | Backoffice browser gateway | OIDC/PKCE, Redis sessions, CSRF and server-side token relay |
+| `services/storefront-bff/` | Reserved Storefront BFF | Placeholder |
+| `web/backoffice/` | React admin application | Protected temporary dashboard, session guards and English/Vietnamese UI |
 | `web/storefront/` | Storefront | Placeholder |
-| `contracts/` | API and event contracts | Reserved directories |
+| `contracts/` | API and event contracts | Checked-in OpenAPI contracts; event schemas remain reserved |
 | `infra/compose/` | Local infrastructure configuration | PostgreSQL and Redis Compose configuration |
 | `.agents/skills/` | Agent workflows and optional UI tooling | Skills and references |
 | `docs/` | Durable project documentation | Development and architecture guides |
@@ -41,20 +42,40 @@ The stack provisions PostgreSQL 18.6 and password-protected Redis 8.6.8. Both po
 The Identity `local` Spring profile imports the root `.env` as a properties file. Maven runs the app with `services/identity` as its default working directory, so the profile loads `../../.env`. From the repository root, run:
 
 ```powershell
-.\services\identity\mvnw.cmd -f services\identity\pom.xml "-Dspring-boot.run.profiles=local" spring-boot:run
+.\services\identity\mvnw.cmd -f services\identity\pom.xml "-Dspring-boot.run.profiles=local" "-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC" spring-boot:run
 ```
 
-On Bash, use `./services/identity/mvnw -f services/identity/pom.xml -Dspring-boot.run.profiles=local spring-boot:run`. This does not require copying `.env` into `services/identity/`. Docker Compose still reads `.env` separately through `--env-file`.
+On Bash, use `./services/identity/mvnw -f services/identity/pom.xml -Dspring-boot.run.profiles=local -Dspring-boot.run.jvmArguments=-Duser.timezone=UTC spring-boot:run`. This does not require copying `.env` into `services/identity/`. Docker Compose still reads `.env` separately through `--env-file`.
 
 
 Start PostgreSQL first. A fresh Compose volume creates the Identity database owned by `POSTGRES_USER`; for an existing volume, run the bootstrap described in [Identity database setup](infra/README.md#identity-database). Set `IDENTITY_DB_USERNAME` and `IDENTITY_DB_PASSWORD` to the same values as `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env`. The example `IDENTITY_JWK_SET_PATH=../../secrets/identity/signing-keys.jwks` is relative to the Identity module working directory and resolves to the root `secrets/` directory; use a valid private RSA RS256 JWK set with key ID `identity-local-dev`. Keep the key local; the `secrets/` directory is ignored by Git. Change the callback URI variables only when configuring the actual BFF client. Stop the service with Ctrl+C.
+
+## Run Backoffice BFF and frontend
+
+For local login, start PostgreSQL and Redis, then Identity, then the BFF and frontend in separate terminals. First provision an administrator and register the `backoffice-bff` confidential client using the [Identity setup guide](services/identity/README.md). Set its callback to `http://localhost:3000/login/oauth2/code/identity` and use the same secret as `BFF_CLIENT_SECRET` in `.env`.
+
+From the repository root, start the BFF on port 8081:
+
+```powershell
+.\services\backoffice-bff\mvnw.cmd -f services\backoffice-bff\pom.xml "-Dspring-boot.run.profiles=local" "-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC" spring-boot:run
+```
+
+In another terminal, start the frontend on port 3000:
+
+```powershell
+Set-Location web/backoffice
+corepack pnpm install --frozen-lockfile
+corepack pnpm dev
+```
+
+Open `http://localhost:3000` and sign in. Vite proxies the session and OAuth requests to the BFF; Identity owns the login form. Ecommerce and Media are not required for login or the temporary Dashboard. See the [BFF guide](services/backoffice-bff/README.md) and [Backoffice guide](web/backoffice/README.md) for configuration and the pinned pnpm fallback.
 
 ## Run Media from the repository root
 
 Media's `local` profile also imports the root `.env`; it does not need a copied env file. Start PostgreSQL and supply real credentials for an isolated Cloudinary environment before running:
 
 ```powershell
-.\services\media\mvnw.cmd -f services\media\pom.xml "-Dspring-boot.run.profiles=local" spring-boot:run
+.\services\media\mvnw.cmd -f services\media\pom.xml "-Dspring-boot.run.profiles=local" "-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC" spring-boot:run
 ```
 
 Set `MEDIA_DB_USERNAME` and `MEDIA_DB_PASSWORD` to the local PostgreSQL role credentials. A fresh Compose volume creates a separate `media` database; existing volumes need the one-time setup described in [infrastructure operations](infra/README.md#identity-database). Media runs on port 9001 by default and needs `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET`. The `.env.example` leaves these provider credentials blank; do not commit real credentials. See the [Media Service guide](services/media/README.md) for API, access and cleanup behavior.
