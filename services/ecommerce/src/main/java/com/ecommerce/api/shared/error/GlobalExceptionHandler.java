@@ -1,4 +1,4 @@
-package com.ecommerce.api.adapter.web;
+package com.ecommerce.api.shared.error;
 
 import java.util.List;
 import java.util.Map;

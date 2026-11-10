@@ -18,13 +18,13 @@ $env:JAVA_TOOL_OPTIONS = '-Duser.timezone=UTC'
 
 For an IDE, set `JAVA_TOOL_OPTIONS` to `-Duser.timezone=UTC` in the Run/Debug environment, or add `-Duser.timezone=UTC` to the application's VM options.
 
-REST errors follow the shared [HTTP error contract](../../docs/04-contracts/http-errors.md). `adapter/web/ApiProblems` writes Problem Details for security-filter failures; `adapter/web/GlobalExceptionHandler` handles MVC failures on `/api/**` and preserves non-API handling. Missing/invalid bearer credentials return 401 with a Bearer challenge; insufficient permissions return 403. Error bodies do not expose JWT decoder diagnostics or exception details. The shared schema lives in `contracts/openapi/common/problem.yaml`; there is no shared Java error library.
+REST errors follow the shared [HTTP error contract](../../docs/04-contracts/http-errors.md). `shared/error/ApiProblems` writes Problem Details for security-filter failures; `shared/error/GlobalExceptionHandler` handles MVC failures on `/api/**` and preserves non-API handling. Missing/invalid bearer credentials return 401 with a Bearer challenge; insufficient permissions return 403. Error bodies do not expose JWT decoder diagnostics or exception details. The shared schema lives in `contracts/openapi/common/problem.yaml`; there is no shared Java error library.
 
 ## Package organization
 
-The root namespace remains `com.ecommerce.api`. The existing HTTP boundary lives directly in `adapter.web`: `ResourceServerSecurityConfiguration`, `GlobalExceptionHandler` and `ApiProblems`. The application entry point stays at the root. No business feature or empty domain/application packages are created before they are needed. Follow the [code organization convention](../../docs/06-development/code-organization.md) when introducing capabilities.
+The root namespace remains `com.ecommerce.api`. Spring composition and resource-server wiring live in `config/ResourceServerSecurityConfiguration`; service-wide HTTP error handling lives in `shared/error`. The application entry point stays at the root. No business feature or empty shared-security packages are created before they are needed.
 
-Tests mirror the web adapter package. `ArchitectureBoundaryTest` checks HTTP adapter placement and keeps persistence dependencies out of the web boundary. Security and validation probes and their route customization remain test-only; the production application continues to deny unknown routes. `PersistenceFoundationIT` uses PostgreSQL 18.6 to verify the migration history and transaction behavior.
+HTTP integration tests mirror the web adapter package. `ArchitectureBoundaryTest` checks HTTP adapter and shared error placement while allowing composition code in `config` to reference Spring HTTP/security APIs, and keeps persistence dependencies out of the web boundary. Security and validation probes and their route customization remain test-only; the production application continues to deny unknown routes. `PersistenceFoundationIT` uses PostgreSQL 18.6 to verify the migration history and transaction behavior.
 
 ## Verification
 

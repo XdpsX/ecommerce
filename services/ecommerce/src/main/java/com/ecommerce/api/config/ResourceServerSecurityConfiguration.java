@@ -1,4 +1,4 @@
-package com.ecommerce.api.adapter.web;
+package com.ecommerce.api.config;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -32,6 +32,8 @@ import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.ecommerce.api.shared.error.ApiProblems;
 
 @Configuration
 @EnableMethodSecurity
