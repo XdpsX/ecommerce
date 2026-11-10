@@ -144,7 +144,14 @@ describe('Backoffice authentication foundation', () => {
     )
 
     await user.click(screen.getByRole('combobox', { name: 'Language' }))
-    await user.keyboard('{ArrowDown}{Enter}')
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'English' })).toHaveFocus(),
+    )
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'Vietnamese' })).toHaveFocus(),
+    )
+    await user.keyboard('{Enter}')
     const vietnameseAuthorization = new URL(
       screen
         .getAllByRole('link', { name: 'Đăng nhập' })
@@ -282,7 +289,14 @@ describe('Backoffice authentication foundation', () => {
     )
     expect(toggle).toHaveFocus()
     await user.click(screen.getByRole('combobox', { name: 'Language' }))
-    await user.keyboard('{ArrowDown}{Enter}')
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'English' })).toHaveFocus(),
+    )
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'Vietnamese' })).toHaveFocus(),
+    )
+    await user.keyboard('{Enter}')
     expect(
       await screen.findByRole('heading', {
         name: 'Chào mừng bạn đến với trang quản trị.',

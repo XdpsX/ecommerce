@@ -22,7 +22,6 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import com.ecommerce.media.asset.application.port.DirectUploadStorage;
 import com.ecommerce.media.asset.application.service.MediaUploadIntentService;
 import com.ecommerce.media.config.MediaProperties;
-import com.ecommerce.media.shared.error.ApiProblems;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -92,7 +91,7 @@ class CloudinaryNotificationControllerTest {
         properties.getDirectUpload().setNotificationApiKey("fixture-notification-key");
         properties.getDirectUpload().setMaxNotificationBytes(bodyLimit);
         JsonMapper json = JsonMapper.builder().build();
-        return new CloudinaryNotificationController(storage, intents, properties, json, new ApiProblems(json), CLOCK);
+        return new CloudinaryNotificationController(storage, intents, properties, json, CLOCK);
     }
 
     private static MockHttpServletRequest request(String body) {

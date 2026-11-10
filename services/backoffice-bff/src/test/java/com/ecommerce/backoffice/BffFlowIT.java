@@ -34,7 +34,11 @@ import com.sun.net.httpserver.HttpServer;
 @Testcontainers
 class BffFlowIT {
     @Container
-    static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8.6.8").withExposedPorts(6379);
+    static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8.6.8");
+
+    static {
+        REDIS.addExposedPort(6379);
+    }
 
     @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
@@ -227,6 +231,7 @@ class BffFlowIT {
     static void stop() throws Exception {
         if (bff != null) bff.close();
         if (downstream != null) downstream.stop(0);
+        REDIS.stop();
         if (identity != null) {
             identity.destroy();
             if (!identity.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) identity.destroyForcibly();
@@ -491,7 +496,6 @@ class BffFlowIT {
             if (process.start().waitFor() != 0) throw new IllegalStateException("Browser verification failed");
         } finally {
             stop();
-            REDIS.stop();
             POSTGRES.stop();
         }
     }

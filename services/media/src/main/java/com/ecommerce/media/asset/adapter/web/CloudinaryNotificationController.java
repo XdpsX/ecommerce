@@ -28,7 +28,6 @@ public class CloudinaryNotificationController {
     private final MediaUploadIntentService intents;
     private final MediaProperties.DirectUpload properties;
     private final JsonMapper json;
-    private final ApiProblems problems;
     private final Clock clock;
 
     public CloudinaryNotificationController(
@@ -36,13 +35,11 @@ public class CloudinaryNotificationController {
             MediaUploadIntentService intents,
             MediaProperties mediaProperties,
             JsonMapper json,
-            ApiProblems problems,
             Clock mediaClock) {
         this.storage = storage;
         this.intents = intents;
         this.properties = mediaProperties.getDirectUpload();
         this.json = json;
-        this.problems = problems;
         this.clock = mediaClock;
     }
 
@@ -117,6 +114,6 @@ public class CloudinaryNotificationController {
 
     private static String text(JsonNode node, String name) {
         JsonNode value = node.get(name);
-        return value != null && value.isTextual() ? value.textValue() : null;
+        return value != null && value.isString() ? value.stringValue() : null;
     }
 }

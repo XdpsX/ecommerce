@@ -150,7 +150,7 @@ public class CloudinaryStorage implements MediaStorage {
             return cloudinary.privateDownload(
                     publicId,
                     format,
-                    ObjectUtils.asMap(
+                    Map.<String, Object>of(
                             "resource_type", "image", "type", "authenticated", "expires_at", expiry, "secure", true));
         } catch (Exception exception) {
             throw new StorageFailure(Category.DOWNLOAD_LINK_GENERATION_FAILED);

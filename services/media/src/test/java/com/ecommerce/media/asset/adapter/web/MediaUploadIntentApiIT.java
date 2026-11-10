@@ -507,7 +507,7 @@ class MediaUploadIntentApiIT {
             };
             return json.readTree(result.getResponse().getContentAsString())
                     .at(pointer)
-                    .textValue();
+                    .stringValue();
         }
     }
 }
