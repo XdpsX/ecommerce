@@ -8,6 +8,8 @@ Ecommerce owns its PostgreSQL database and Flyway history. It uses Spring JDBC, 
 
 The first migration, `V1__ecommerce_foundation.sql`, intentionally contains only `SELECT 1;` to establish and verify the migration history without creating business tables. Do not edit an applied migration; add later schema changes as new numbered migrations. Do not baseline an unknown database or enable schema generation. Provision an empty Ecommerce database before startup; local Compose creates it on a fresh volume and the [infrastructure guide](../../infra/README.md) covers existing volumes.
 
+Issue #23's approved Category design uses Spring Data JPA + Hibernate, JPA `@Version` and optimistic structure revision, with Flyway continuing to own migrations. This is planned work; the current foundation still uses JDBC and exposes no Category API. The change is scoped to Ecommerce. Category will store `imageAssetId` under the [independent Media reference policy](../../docs/03-architecture/media-service.md#consumer-image-references): Media can delete the asset, and consumers must handle unavailable images with placeholders.
+
 With PostgreSQL running and `.env` configured, start the service from its directory so the `local` profile resolves the root `.env` import. If the application JVM timezone is `Asia/Saigon`, PostgreSQL 18 rejects the JDBC connection. Set UTC for the application process:
 
 ```powershell

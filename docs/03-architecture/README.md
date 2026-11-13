@@ -22,9 +22,13 @@ Implementation status: service-wide HTTP error handling now lives in each servic
 
 [Identity Service — Admin Authentication and Authorization](identity-service.md) documents the Issue #11 implementation, including JWT claims, admin bootstrap and security data ownership. [ADR-0002](adr/0002-admin-authorization-rbac.md) records the RBAC-with-permissions decision and deferred ABAC evaluation.
 
+## Ecommerce Category persistence direction
+
+Issue #23's approved design (2026-11-13) uses Spring Data JPA + Hibernate for Category persistence, with Flyway as the schema owner. Category uses JPA `@Version`; hierarchy and order changes use an optimistic structure revision without a global pessimistic write lock. Create does not require a client structure revision; the backend handles concurrent creation. The current Ecommerce foundation still uses Spring JDBC; JPA and Category APIs are planned, not yet implemented. This change does not migrate Identity or Media persistence.
+
 ## Media design
 
-[Media Service](media-service.md) documents the implemented private image-storage boundary, Identity-issued entitlements, authenticated provider assets, cleanup recovery and deferred consumer attachment rules. Asset code remains feature-owned; the backend package convention above defines the target placement of service-wide technical components. Deployed-account provider smoke checks remain release requirements. [ADR-0003](adr/0003-media-direct-upload-cloudinary-a1.md) selects the A1 direct-upload direction; its [security and operations specification](media-direct-upload-security-operations.md) preserves failed/unresolved gates and policy decisions after spike closure.
+[Media Service](media-service.md) documents the implemented private image-storage boundary, Identity-issued entitlements, authenticated provider assets, cleanup recovery and the approved [independent consumer image-reference policy](media-service.md#consumer-image-references). Ecommerce stores `imageAssetId`; Media may delete assets independently of those references, and consumers display placeholders for unavailable images. Attachment reservation, reference tracking, deletion protection and Media Library UI are outside Issue #23. Asset code remains feature-owned; the backend package convention above defines the placement of service-wide technical components. Deployed-account provider smoke checks remain release requirements. [ADR-0003](adr/0003-media-direct-upload-cloudinary-a1.md) selects the A1 direct-upload direction; its [security and operations specification](media-direct-upload-security-operations.md) preserves failed/unresolved gates and policy decisions after spike closure.
 
 ## Organization
 

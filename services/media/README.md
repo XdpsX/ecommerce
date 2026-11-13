@@ -41,7 +41,7 @@ Assets are uploaded as Cloudinary `authenticated`; original and derived assets m
 
 An `UPLOADING` row is committed before provider I/O. Only a verified provider response and read-after-write inspection may move it to `READY`. A timeout or uncertain provider result leaves a durable tombstone for cleanup. Deletion commits `DELETE_PENDING` first and returns 202; cleanup claims rows under a lease and retries exact generated object identities. Persistent credential, quota, rate-limit or ambiguous-upload failures remain visible through the asset row's attempt count, next-attempt time and sanitized error category. Investigate these rows and preserve tombstones; never mass-delete by provider folder or purge ambiguous rows.
 
-`READY` assets do not expire automatically. Product/catalog attachment and safe deletion protection are not part of this service contract; consumers must define those rules before keeping media IDs as durable references.
+`READY` assets do not expire automatically. Under the approved [consumer image-reference policy](../../docs/03-architecture/media-service.md#consumer-image-references), Ecommerce stores `imageAssetId` independently; Media may delete assets without checking Category references. Optional READY checks at assignment do not reserve an asset. Consumers display placeholders for missing/unavailable images. Replacing/removing a reference or deleting a Category does not delete Media bytes. Attachment reservation, reference tracking, deletion protection and Media Library UI are outside Issue #23.
 
 ## Verification
 
