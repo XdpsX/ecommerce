@@ -29,7 +29,9 @@ class ArchitectureBoundaryTest {
                                     ".adapter.",
                                     ".config.",
                                     ".domain.",
-                                    ".application.");
+                                    ".application.service.",
+                                    ".application.port.",
+                                    ".application.model.");
                 }
                 if (!composition
                         && !relative.startsWith("shared/error/")
@@ -38,6 +40,11 @@ class ArchitectureBoundaryTest {
                                 || source.contains("org.springframework.security.web.")
                                 || source.contains("jakarta.servlet."))) {
                     assertThat(relative).as("HTTP boundary: %s", relative).matches("[^/]+/adapter/web/.*");
+                }
+                if (relative.startsWith("category/domain/") || relative.startsWith("category/application/")) {
+                    assertThat(source)
+                            .as("Category domain/application dependency boundary: %s", relative)
+                            .doesNotContain(".adapter.", "jakarta.persistence", "org.springframework.jdbc");
                 }
                 String packageSuffix = relative.contains("/")
                         ? "." + relative.substring(0, relative.lastIndexOf('/')).replace('/', '.')

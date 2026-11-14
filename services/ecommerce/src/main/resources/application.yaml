@@ -7,10 +7,16 @@ spring:
     password: ${ECOMMERCE_DB_PASSWORD}
   flyway:
     enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
 identity:
   issuer: ${IDENTITY_ISSUER:http://localhost:9000}
   jwk-set-uri: ${IDENTITY_JWK_SET_URI:http://localhost:9000/oauth2/jwks}
   audience: ${IDENTITY_AUDIENCE:ecommerce-api}
+category:
+  max-depth: ${CATEGORY_MAX_DEPTH:8}
 
 # MVC DEBUG/TRACE diagnostics can contain rejected values or request bodies.
 logging:

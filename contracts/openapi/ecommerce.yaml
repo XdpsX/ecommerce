@@ -1,0 +1,282 @@
+openapi: 3.1.0
+info:
+  title: Ecommerce API
+  version: 1.0.0
+  description: Administrator category management. Media image IDs are independent references and can become unavailable.
+servers:
+  - url: /api/admin
+paths:
+  /categories:
+    get:
+      operationId: listCategories
+      description: Requires category:read. Responses are not cacheable.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: q, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/Status' } }
+        - { name: visibility, in: query, schema: { $ref: '#/components/schemas/Visibility' } }
+        - { name: parentId, in: query, schema: { type: string, format: uuid } }
+        - { name: rootsOnly, in: query, schema: { type: boolean, default: false } }
+        - { name: rootId, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Paged categories.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/CategoryPage' } } }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+    post:
+      operationId: createCategory
+      description: Requires category:write. Appends to its sibling group; no client structure revision is accepted.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategory' }
+      responses:
+        '201':
+          description: Created category.
+          headers:
+            Location: { schema: { type: string, format: uri-reference } }
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '409': { $ref: 'common/problem.yaml#/components/responses/Conflict' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+  /categories/structure:
+    get:
+      operationId: getCategoryStructure
+      description: Requires category:read. Returns the complete consistent tree snapshot.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      responses:
+        '200':
+          description: Complete consistent tree snapshot.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Structure' } } }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+  /categories/slug-suggestion:
+    get:
+      operationId: suggestCategorySlug
+      description: Requires category:read. Suggests an editable slug; uniqueness is not reserved.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      parameters:
+        - { name: name, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
+      responses:
+        '200':
+          description: Editable slug suggestion.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [slug]
+                properties: { slug: { type: string } }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+  /categories/sibling-order:
+    put:
+      operationId: reorderCategorySiblings
+      description: Requires category:write. orderedIds must contain every sibling ID exactly once. Response is not cacheable.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderedIds, expectedStructureRevision]
+              properties:
+                parentId: { type: [string, 'null'], format: uuid }
+                orderedIds: { type: array, items: { type: string, format: uuid } }
+                expectedStructureRevision: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Sibling order was applied.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/StructureResult' } } }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '409': { $ref: 'common/problem.yaml#/components/responses/Conflict' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+  /categories/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getCategory
+      description: Requires category:read. The result includes effective visibility through all ancestors.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      responses:
+        '200':
+          description: Category.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+    put:
+      operationId: updateCategory
+      description: Requires category:write. Omitted imageAction means KEEP. Response is not cacheable.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCategory' }
+      responses:
+        '200':
+          description: Updated category.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '409': { $ref: 'common/problem.yaml#/components/responses/Conflict' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+    delete:
+      operationId: deleteCategory
+      description: Requires category:delete. Only leaf categories can be deleted.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      parameters:
+        - { name: expectedVersion, in: query, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: expectedStructureRevision, in: query, required: true, schema: { type: integer, minimum: 0 } }
+      responses:
+        '204':
+          description: Deleted.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '409': { $ref: 'common/problem.yaml#/components/responses/Conflict' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+  /categories/{id}/move:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: moveCategory
+      description: Requires category:write. Response is not cacheable.
+      security: [{ ecommerceOAuth: [ecommerce.api] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedVersion, expectedStructureRevision]
+              properties:
+                parentId: { type: [string, 'null'], format: uuid }
+                expectedVersion: { type: integer, minimum: 0 }
+                expectedStructureRevision: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Category was moved.
+          headers: { Cache-Control: { schema: { type: string, const: no-store } } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/StructureResult' } } }
+        '400': { $ref: 'common/problem.yaml#/components/responses/BadRequest' }
+        '401': { $ref: 'common/problem.yaml#/components/responses/Unauthorized' }
+        '403': { $ref: 'common/problem.yaml#/components/responses/Forbidden' }
+        '404': { $ref: 'common/problem.yaml#/components/responses/NotFound' }
+        '409': { $ref: 'common/problem.yaml#/components/responses/Conflict' }
+        '500': { $ref: 'common/problem.yaml#/components/responses/InternalError' }
+components:
+  securitySchemes:
+    ecommerceOAuth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: http://localhost:9000/oauth2/authorize
+          tokenUrl: http://localhost:9000/oauth2/token
+          scopes: { ecommerce.api: Ecommerce API access }
+  schemas:
+    Status: { type: string, enum: [ACTIVE, INACTIVE] }
+    Visibility: { type: string, enum: [PUBLIC, PRIVATE] }
+    CreateCategory:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        slug: { type: string, maxLength: 200, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        description: { type: [string, 'null'], maxLength: 4000 }
+        imageAssetId: { type: [string, 'null'], format: uuid }
+        parentId: { type: [string, 'null'], format: uuid }
+        status: { $ref: '#/components/schemas/Status', default: INACTIVE }
+        visibility: { $ref: '#/components/schemas/Visibility', default: PRIVATE }
+    UpdateCategory:
+      type: object
+      required: [name, slug, status, visibility, expectedVersion]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        slug: { type: string, maxLength: 200, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        description: { type: [string, 'null'], maxLength: 4000 }
+        imageAction: { type: string, enum: [KEEP, SET, REMOVE], default: KEEP }
+        imageAssetId: { type: [string, 'null'], format: uuid }
+        status: { $ref: '#/components/schemas/Status' }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        expectedVersion: { type: integer, minimum: 0 }
+    Category:
+      type: object
+      required: [id, name, slug, status, visibility, displayOrder, version, structureRevision, createdAt, createdBy, updatedAt, updatedBy, effectivelyVisible]
+      properties:
+        id: { type: string, format: uuid }
+        parentId: { type: [string, 'null'], format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: [string, 'null'] }
+        imageAssetId: { type: [string, 'null'], format: uuid }
+        status: { $ref: '#/components/schemas/Status' }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        displayOrder: { type: integer }
+        version: { type: integer }
+        structureRevision: { type: integer }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string, format: uuid }
+        updatedAt: { type: string, format: date-time }
+        updatedBy: { type: string, format: uuid }
+        effectivelyVisible: { type: boolean }
+    CategoryPage:
+      type: object
+      required: [content, totalElements, totalPages, number, size]
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/Category' } }
+        totalElements: { type: integer }
+        totalPages: { type: integer }
+        number: { type: integer }
+        size: { type: integer }
+    Structure:
+      type: object
+      required: [structureRevision, categories]
+      properties:
+        structureRevision: { type: integer }
+        categories:
+          type: array
+          items: { $ref: '#/components/schemas/TreeNode' }
+    TreeNode:
+      type: object
+      required: [category, depth, effectivelyVisible]
+      properties:
+        category: { $ref: '#/components/schemas/Category' }
+        depth: { type: integer }
+        effectivelyVisible: { type: boolean }
+    StructureResult:
+      type: object
+      required: [structureRevision, category]
+      properties:
+        structureRevision: { type: integer }
+        category: { oneOf: [{ $ref: '#/components/schemas/Category' }, { type: 'null' }] }

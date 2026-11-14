@@ -12,7 +12,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,6 +35,7 @@ import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
 import com.ecommerce.api.shared.error.ApiProblems;
 
@@ -150,5 +154,29 @@ public class ResourceServerSecurityConfiguration {
                                 problems.writeSecurity(request, response, HttpStatus.FORBIDDEN))
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(ecommerceJwtAuthenticationConverter)));
         return http.build();
+    }
+
+    @Bean
+    Customizer<AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry>
+            categoryAuthorizationRules() {
+        return rules -> rules.requestMatchers(HttpMethod.GET, "/api/admin/categories", "/api/admin/categories/**")
+                .access(categoryPermission("category:read"))
+                .requestMatchers(HttpMethod.POST, "/api/admin/categories", "/api/admin/categories/*/move")
+                .access(categoryPermission("category:write"))
+                .requestMatchers(HttpMethod.PUT, "/api/admin/categories/*", "/api/admin/categories/sibling-order")
+                .access(categoryPermission("category:write"))
+                .requestMatchers(HttpMethod.DELETE, "/api/admin/categories/*")
+                .access(categoryPermission("category:delete"));
+    }
+
+    private AuthorizationManager<RequestAuthorizationContext> categoryPermission(String permission) {
+        return (authentication, context) -> {
+            var authorities = authentication.get().getAuthorities();
+            boolean hasScope =
+                    authorities.stream().map(GrantedAuthority::getAuthority).anyMatch("SCOPE_ecommerce.api"::equals);
+            boolean hasPermission =
+                    authorities.stream().map(GrantedAuthority::getAuthority).anyMatch(("PERM_" + permission)::equals);
+            return new AuthorizationDecision(hasScope && hasPermission);
+        };
     }
 }
