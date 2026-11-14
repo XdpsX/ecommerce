@@ -6,7 +6,7 @@ As of 2026-11-06: **feasibility investigation CLOSED; A1 architecture direction 
 
 This document defines direct-upload invariants and operational acceptance requirements. The backend API, additive persistence, verification, reconciliation and optional callback are implemented; production enablement remains pending release verification. Current multipart behavior is described in [Media Service](media-service.md) and the [service README](../../services/media/README.md). OpenAPI describes the implemented HTTP contract.
 
-Media owns bytes, provider identities, upload intents and recovery. Product owns references, gallery order and primary-image selection. READY means verified upload availability, never Product attachment. Valid READY images without Product references remain retained; attachment protection and READY orphan cleanup require a separate integration contract.
+Media owns bytes, provider identities, upload intents and recovery. Ecommerce owns image references; Product gallery order and primary-image selection remain Product concerns. READY means verified upload availability, never attachment. Under the [consumer image-reference policy](media-service.md#consumer-image-references) approved on 2026-11-13, Media may delete assets independently of Category references; optional READY checks do not reserve assets, and consumers display placeholders when images are unavailable. Attachment reservation, reference tracking, deletion protection and Media Library UI are outside Issue #23. Valid READY assets are retained until explicitly deleted; no reference-based READY orphan cleanup is introduced. Upload-intent recovery and its existing cleanup safeguards remain unchanged.
 
 ## D2/D4: evidence, exceptions and open policy
 
