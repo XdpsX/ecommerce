@@ -1,6 +1,6 @@
 # Media Service
 
-Media is a standalone Spring MVC resource server. It owns image metadata, generated Cloudinary object identities, upload/deletion operation state and cleanup retry records in the `media` database. Identity owns user accounts, permissions and token issuance. Media does not read Identity tables; Ecommerce and future consumers store stable Media UUIDs only after defining their own reference rules.
+Media is a standalone Spring MVC resource server. It owns image metadata, generated Cloudinary object identities, upload/deletion operation state and cleanup retry records in the `media` database. Identity owns user accounts, permissions and token issuance. Ecommerce consumers may store Media UUIDs as independent image references; neither service reads the other's database.
 
 The `asset` feature groups its domain, application services, ports, models, exceptions and technical adapters. Spring properties and bean/security composition live under root `config`. Service-wide HTTP problem handling lives in `shared/error`. Asset adapters and business exceptions retain their feature owners. Media application services receive immutable image, lifecycle and direct-upload settings snapshots mapped from the bound service properties.
 
@@ -22,7 +22,15 @@ Before provider I/O, Media commits an `UPLOADING` row with a UUID-generated obje
 
 Deletion first commits `DELETE_PENDING`; new links are denied immediately. A scheduled worker claims bounded rows with `FOR UPDATE SKIP LOCKED` and a lease, calls Cloudinary outside the database transaction, then conditionally records completion. An expired outstanding lease is eligible for reclaim independently of retry backoff and receives a new lease token; stale workers cannot complete work under the old token. Errors use exponential backoff with jitter capped by configuration. A definite not-found result completes ordinary deletion; for an uncertain upload, not-found is not proof that an in-flight upload cannot appear later, so the tombstone is retained and the exact object identity is reconciled again.
 
-Cleanup attempts and sanitized error categories remain in the database for operator inspection. Investigate persistent pending rows, credential/rate-limit failures and old ambiguous-upload tombstones before considering any manual action. Do not purge tombstones or delete by folder/prefix. READY images are not removed automatically: there is no attachment/reference contract or unused-image TTL in this change. Any product/catalog consumer must establish deletion protection before persisting durable references.
+Cleanup attempts and sanitized error categories remain in the database for operator inspection. Investigate persistent pending rows, credential/rate-limit failures and old ambiguous-upload tombstones before considering any manual action. Do not purge tombstones or delete by folder/prefix. READY images have no automatic unused-image TTL. Explicitly authorized deletion remains available regardless of consumer references, as described below.
+
+## Consumer image references
+
+**Approved policy, 2026-11-13 (Issue #23):** Media operates independently of Ecommerce. Ecommerce owns nullable `imageAssetId` references, including Category images. Media may delete an asset without checking Category or other Ecommerce references. A stored reference does not guarantee continued asset availability.
+
+Ecommerce may check READY metadata when assigning an image, using the existing Media authorization requirements. This optional check proves availability only at that moment; concurrent or later deletion is allowed. A missing or unavailable image is handled by the consumer with a placeholder. It does not invalidate the Category or require clearing its stored reference. Persist asset IDs, never provider identities or expiring download URLs.
+
+Replacing/removing an image reference or deleting a Category does not request Media deletion. Attachment reservation, cross-service reference tracking, deletion protection and Media Library UI are outside Issue #23. READY remains an upload state, not an attachment state; unreferenced READY assets remain retained until explicitly deleted. No shared database transaction or reference-based orphan cleanup is introduced. This policy supersedes the earlier requirement to establish deletion protection before storing durable references.
 
 ## Local operation and verification
 

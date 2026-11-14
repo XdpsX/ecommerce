@@ -3,6 +3,7 @@ package com.ecommerce.api.adapter.web;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -124,6 +125,94 @@ class ResourceServerSecurityIT {
     }
 
     @Test
+    void categoryApiRequiresBothEcommerceScopeAndExactPermission() throws Exception {
+        mvc.perform(get("/api/admin/categories")
+                        .header(
+                                "Authorization",
+                                "Bearer " + token(ISSUER, "ecommerce-api", List.of("category:read"), "ecommerce.api")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"));
+
+        mvc.perform(get("/api/admin/categories")
+                        .header(
+                                "Authorization",
+                                "Bearer " + token(ISSUER, "ecommerce-api", List.of("category:read"), "identity.admin")))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get("/api/admin/categories")
+                        .header(
+                                "Authorization",
+                                "Bearer " + token(ISSUER, "ecommerce-api", List.of(), "ecommerce.api")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void slugSuggestionRejectsBlankOversizedAndMissingNamesAsNoStoreBadRequests() throws Exception {
+        String bearer = "Bearer " + token(ISSUER, "ecommerce-api", List.of("category:read"), "ecommerce.api");
+        mvc.perform(get("/api/admin/categories/slug-suggestion")
+                        .param("name", "  ")
+                        .header("Authorization", bearer))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[0].location").value("query"))
+                .andExpect(jsonPath("$.errors[0].name").value("name"));
+
+        mvc.perform(get("/api/admin/categories/slug-suggestion")
+                        .param("name", "x".repeat(201))
+                        .header("Authorization", bearer))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        mvc.perform(get("/api/admin/categories/slug-suggestion").header("Authorization", bearer))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().string("Cache-Control", "no-store"));
+    }
+
+    @Test
+    void structuralCommandsReturnRevisionAndNullableCategoryPayloads() throws Exception {
+        String bearer = "Bearer " + token(ISSUER, "ecommerce-api", List.of("category:write"), "ecommerce.api");
+        var first = mvc.perform(post("/api/admin/categories")
+                        .header("Authorization", bearer)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Contract root\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andReturn();
+        String id = jsonValue(first, "$.id");
+        var child = mvc.perform(post("/api/admin/categories")
+                        .header("Authorization", bearer)
+                        .contentType("application/json")
+                        .content("{\"name\":\"Contract child\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String childId = jsonValue(child, "$.id");
+        String childVersion = jsonValue(child, "$.version");
+        String revision = jsonValue(child, "$.structureRevision");
+        var moved = mvc.perform(post("/api/admin/categories/{id}/move", childId)
+                        .header("Authorization", bearer)
+                        .contentType("application/json")
+                        .content("{\"parentId\":\"" + id + "\",\"expectedVersion\":" + childVersion
+                                + ",\"expectedStructureRevision\":" + revision + "}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.structureRevision").isNumber())
+                .andExpect(jsonPath("$.category.id").value(childId))
+                .andReturn();
+        String movedRevision = jsonValue(moved, "$.structureRevision");
+        mvc.perform(put("/api/admin/categories/sibling-order")
+                        .header("Authorization", bearer)
+                        .contentType("application/json")
+                        .content("{\"parentId\":\"" + id + "\",\"orderedIds\":[\"" + childId
+                                + "\"],\"expectedStructureRevision\":" + movedRevision + "}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.structureRevision").isNumber())
+                .andExpect(jsonPath("$.category").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
     void rejectsWrongIssuerAudienceAndSessionCookie() throws Exception {
         mvc.perform(get("/api/test/security-probe")
                         .header(
@@ -220,5 +309,11 @@ class ResourceServerSecurityIT {
                         .build(),
                 claims));
         return jwt.getTokenValue();
+    }
+
+    private static String jsonValue(org.springframework.test.web.servlet.MvcResult result, String expression)
+            throws Exception {
+        Object value = com.jayway.jsonpath.JsonPath.read(result.getResponse().getContentAsString(), expression);
+        return String.valueOf(value);
     }
 }

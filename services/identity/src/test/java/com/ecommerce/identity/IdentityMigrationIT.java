@@ -132,13 +132,22 @@ class IdentityMigrationIT {
                         "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '6' AND success = TRUE",
                         Integer.class))
                 .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '7' AND success = TRUE",
+                        Integer.class))
+                .isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM roles", Integer.class))
                 .isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM permissions", Integer.class))
-                .isEqualTo(7);
+                .isEqualTo(10);
         assertThat(jdbcTemplate.queryForObject(
                         "SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id "
                                 + "WHERE p.audience = 'media-api'",
+                        Integer.class))
+                .isEqualTo(3);
+        assertThat(jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id "
+                                + "WHERE p.audience = 'ecommerce-api' AND p.code LIKE 'category:%'",
                         Integer.class))
                 .isEqualTo(3);
         assertThat(jdbcTemplate.queryForObject(

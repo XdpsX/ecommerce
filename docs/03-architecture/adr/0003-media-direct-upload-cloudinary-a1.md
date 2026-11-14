@@ -37,7 +37,7 @@ The reason to proceed with A1 as a direction is the demonstrated original-input 
 
 Implementation must prove trusted output/identity verification, conditional state transitions, concurrency limits, durable cleanup and callback recovery. Production enablement additionally needs deployed-account validation and operational acceptance tests. The subsequent user authorization permits backend code, additive schema and HTTP contract changes described in the security/operations specification. It does not authorize deployment or unrelated integrations.
 
-Upload readiness remains separate from Product attachment. Valid unreferenced READY assets are retained; attachment contracts and READY orphan cleanup belong to later Product–Media integration. No shared database transaction is introduced.
+Upload readiness remains separate from consumer image references. Valid unreferenced READY assets are retained until explicitly deleted. **Subsequent consumer policy (2026-11-13, Issue #23):** Media may delete an asset independently of Ecommerce references; optional READY checks do not reserve it, and consumers display a placeholder when it is unavailable. Attachment reservation, reference tracking, deletion protection and Media Library UI are outside Issue #23. No shared database transaction or reference-based READY orphan cleanup is introduced. See the [consumer image-reference policy](../media-service.md#consumer-image-references). This clarification replaces the earlier deferred attachment-contract prerequisite without changing the A1 upload decision or its acceptance gates.
 
 ## Related documentation
 

@@ -45,7 +45,7 @@ java -Duser.timezone=UTC -jar target/identity-0.0.1-SNAPSHOT.jar --spring.profil
 
 Enter the same secret configured as `BFF_CLIENT_SECRET`. Setting `IDENTITY_CLIENT_*` in `.env` does not register the client automatically. Confirm the callback matches the BFF browser callback before starting sign-in.
 
-Migration V6 adds the `media:read`, `media:upload` and `media:delete` permissions for audience `media-api`, initially assigned to `SUPER_ADMIN`. New registrations may request the `media.api` scope. To add that scope to one existing client without replacing its secret, callback URIs, grants or other scopes, run the explicit interactive operator command after migration:
+Migration V6 adds the `media:read`, `media:upload` and `media:delete` permissions for audience `media-api`, initially assigned to `SUPER_ADMIN`. Migration V7 adds `category:read`, `category:write` and `category:delete` for `ecommerce-api` to `SUPER_ADMIN`. Existing tokens remain snapshots and must be reissued to include the new Category permissions. New registrations may request the `media.api` scope. To add that scope to one existing client without replacing its secret, callback URIs, grants or other scopes, run the explicit interactive operator command after migration:
 
 ```sh
 java -jar services/identity/target/identity-0.0.1-SNAPSHOT.jar --identity.server-enabled=false --identity.command=add-media-scope --client-id=backoffice-bff

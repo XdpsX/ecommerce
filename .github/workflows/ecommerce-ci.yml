@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'services/ecommerce/**'
+      - 'contracts/openapi/ecommerce.yaml'
       - 'services/identity/**'
       - 'contracts/openapi/identity.yaml'
       - 'contracts/openapi/common/**'
@@ -13,6 +14,7 @@ on:
     branches: ['develop', 'main', 'phase/**']
     paths:
       - 'services/ecommerce/**'
+      - 'contracts/openapi/ecommerce.yaml'
       - 'services/identity/**'
       - 'contracts/openapi/identity.yaml'
       - 'contracts/openapi/common/**'
