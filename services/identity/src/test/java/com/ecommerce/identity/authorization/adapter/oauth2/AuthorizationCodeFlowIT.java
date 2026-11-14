@@ -262,7 +262,10 @@ class AuthorizationCodeFlowIT {
         assertThat(accessClaims.getSubject()).isEqualTo(administratorId.toString());
         assertThat(accessClaims.getAudience()).containsExactlyInAnyOrder("ecommerce-api", "identity-api");
         assertThat(accessClaims.getStringListClaim("roles")).contains("SUPER_ADMIN");
-        assertThat(accessClaims.getStringListClaim("permissions")).contains("administrator:read", "entitlement:write");
+        assertThat(accessClaims.getStringListClaim("permissions"))
+                .contains(
+                        "administrator:read", "entitlement:write", "category:read", "category:write", "category:delete")
+                .doesNotContain("media:read", "media:upload", "media:delete");
         assertThat(accessClaims.getStringClaim("scope")).isEqualTo("ecommerce.api identity.admin openid profile");
 
         SignedJWT idToken = SignedJWT.parse(tokenBody.getString("id_token"));
